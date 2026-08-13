@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { AnimatePresence, motion } from "framer-motion"
+import { CurtainTransition } from "@/components/curtain-transition"
 import { HomeScreen } from "@/components/home-screen"
 import { SelectScreen } from "@/components/select-screen"
 import { GameScreen } from "@/components/game-screen"
@@ -46,36 +46,28 @@ export default function Page() {
 
   return (
     <main className="min-h-dvh">
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={screen + (category ?? "")}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.2 }}
-        >
-          {screen === "home" && <HomeScreen onSelectCategory={selectCategory} />}
+      <CurtainTransition transitionKey={screen + (category ?? "")}>
+        {screen === "home" && <HomeScreen onSelectCategory={selectCategory} />}
 
-          {screen === "select" && category && (
-            <SelectScreen category={category} onBack={() => setScreen("home")} onStart={start} />
-          )}
+        {screen === "select" && category && (
+          <SelectScreen category={category} onBack={() => setScreen("home")} onStart={start} />
+        )}
 
-          {screen === "game" && config && (
-            <GameScreen config={config} onFinish={finish} onQuit={() => setScreen("home")} />
-          )}
+        {screen === "game" && config && (
+          <GameScreen config={config} onFinish={finish} onQuit={() => setScreen("home")} />
+        )}
 
-          {screen === "result" && result && (
-            <ResultScreen
-              result={result}
-              onRetry={() => {
-                setConfig({ category: result.category, direction: result.direction })
-                setScreen("game")
-              }}
-              onHome={() => setScreen("home")}
-            />
-          )}
-        </motion.div>
-      </AnimatePresence>
+        {screen === "result" && result && (
+          <ResultScreen
+            result={result}
+            onRetry={() => {
+              setConfig({ category: result.category, direction: result.direction })
+              setScreen("game")
+            }}
+            onHome={() => setScreen("home")}
+          />
+        )}
+      </CurtainTransition>
     </main>
   )
 }
