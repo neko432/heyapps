@@ -45,7 +45,7 @@
   color-scheme: light;
   --radius: 1.1rem;
 
-  --background: oklch(0.975 0.015 280);
+  --background: oklch(0.98 0.022 95);
   --foreground: oklch(0.28 0.05 285);
 
   --card: oklch(1 0 0);
@@ -85,11 +85,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-image:
-      radial-gradient(circle at 12% 18%, color-mix(in oklch, var(--pop-pink) 22%, transparent), transparent 42%),
-      radial-gradient(circle at 88% 12%, color-mix(in oklch, var(--pop-blue) 20%, transparent), transparent 40%),
-      radial-gradient(circle at 78% 88%, color-mix(in oklch, var(--pop-teal) 20%, transparent), transparent 42%);
-    background-attachment: fixed;
+    /* Simple single-color pastel background — no gradient, no pattern. */
   }
 }
 

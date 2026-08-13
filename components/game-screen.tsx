@@ -2,10 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { checkRomaji } from "@/lib/romaji"
+import { Volume2, VolumeX } from "lucide-react"
+import { checkRomaji, completedReadingCount } from "@/lib/romaji"
 import { formatTime } from "@/lib/types"
 import type { AnsweredItem, GameConfig, GameResult, QuestionResult } from "@/lib/types"
 import { buildQuestions, shuffle, type Question } from "@/lib/quiz-data"
+import { sound } from "@/lib/sound"
+import { getSoundEnabled, setSoundEnabled } from "@/lib/storage"
 import { PopButton } from "./pop-button"
 import { AiChat } from "./ai-chat"
 
@@ -31,6 +34,11 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
   const [wrong, setWrong] = useState(false)
   const [now, setNow] = useState(0)
   const [answered, setAnswered] = useState<AnsweredItem[]>([])
+  const [muted, setMuted] = useState(false)
+
+  // Source of truth for typed input. Updated synchronously on every keystroke so
+  // rapid typing can't drop characters to a stale React state value.
+  const typedRef = useRef("")
 
   const results = useRef<QuestionResult[]>([])
   const startRef = useRef<number>(performance.now())
@@ -41,6 +49,27 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
 
   const current = questions[index]
   const overlayOpen = paused || showChat || showQuitConfirm
+
+  // Load the saved sound preference and unlock the audio context.
+  useEffect(() => {
+    const on = getSoundEnabled()
+    setMuted(!on)
+    sound.setEnabled(on)
+    sound.resume()
+  }, [])
+
+  const toggleMute = useCallback(() => {
+    setMuted((m) => {
+      const next = !m
+      sound.setEnabled(!next)
+      setSoundEnabled(!next)
+      if (!next) {
+        sound.resume()
+        sound.hint()
+      }
+      return next
+    })
+  }, [])
 
   // Ticking timer for the total elapsed display.
   useEffect(() => {
@@ -125,6 +154,7 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
         return
       }
       setIndex((i) => i + 1)
+      typedRef.current = ""
       setTyped("")
       setHintLevel(0)
       setUsedHint(false)
@@ -136,43 +166,93 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
   const wrongTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const triggerWrong = useCallback(() => {
     setWrong(true)
+    sound.wrong()
     clearTimeout(wrongTimer.current)
     wrongTimer.current = setTimeout(() => setWrong(false), 300)
   }, [])
 
+  // Commit a new typed value: update the ref (synchronous truth) + state (render).
+  const commit = useCallback((value: string) => {
+    typedRef.current = value
+    setTyped(value)
+  }, [])
+
+  // Evaluate a candidate value produced by appending one character.
   const evaluate = useCallback(
     (value: string) => {
       if (!current) return
       if (current.mode === "romaji" && current.reading) {
         const res = checkRomaji(current.reading, value)
-        if (res === "match") return advance(current, usedHint)
+        if (res === "match") {
+          sound.correct()
+          return advance(current, usedHint)
+        }
         if (res === "no") return triggerWrong()
-        setTyped(value)
+        sound.key()
+        commit(value)
       } else {
         const target = (current.ascii ?? "").toLowerCase()
         const v = value.toLowerCase()
-        if (v === target) return advance(current, usedHint)
+        if (v === target) {
+          sound.correct()
+          return advance(current, usedHint)
+        }
         if (!target.startsWith(v)) return triggerWrong()
-        setTyped(value)
+        sound.key()
+        commit(value)
       }
     },
-    [current, advance, triggerWrong, usedHint],
+    [current, advance, triggerWrong, usedHint, commit],
   )
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (overlayOpen) return
-    evaluate(e.target.value)
+  // Resolve the intended Latin character for a key event. Uses e.key normally
+  // (respects the keyboard layout), but falls back to the physical e.code when a
+  // Japanese IME is composing (keyCode 229) so kana-mode input can't corrupt it.
+  function charFromEvent(e: React.KeyboardEvent<HTMLInputElement>): string | null {
+    const composing = e.nativeEvent.isComposing || e.keyCode === 229
+    if (!composing && e.key && e.key.length === 1) {
+      return e.key
+    }
+    const code = e.code
+    if (/^Key[A-Z]$/.test(code)) return code.slice(3).toLowerCase()
+    if (/^Digit[0-9]$/.test(code)) return code.slice(5)
+    if (/^Numpad[0-9]$/.test(code)) return code.slice(6)
+    if (code === "Minus" || code === "NumpadSubtract") return "-"
+    if (code === "NumpadAdd") return "+"
+    if (code === "Equal" && e.shiftKey) return "+"
+    return null
   }
 
-  // Enter reveals the next answer character as a hint.
+  // All typing is handled here (not via input onChange) so it is immune to IME
+  // composition and controlled-input lag under fast typing.
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (overlayOpen) return
+    // Let browser/OS shortcuts through untouched.
+    if (e.metaKey || e.ctrlKey || e.altKey) return
+
     if (e.key === "Enter") {
-      if (e.nativeEvent.isComposing || e.keyCode === 229) return
       e.preventDefault()
-      if (overlayOpen) return
+      // Reveal the character AFTER what the player has already typed correctly.
+      const completed =
+        current.mode === "romaji" && current.reading
+          ? completedReadingCount(current.reading, typedRef.current)
+          : typedRef.current.length
       setUsedHint(true)
-      setHintLevel((l) => Math.min(l + 1, current.answerChars.length))
+      setHintLevel((l) => Math.min(Math.max(l + 1, completed + 1), current.answerChars.length))
+      sound.hint()
+      return
     }
+
+    if (e.key === "Backspace") {
+      e.preventDefault()
+      commit(typedRef.current.slice(0, -1))
+      return
+    }
+
+    const ch = charFromEvent(e)
+    if (ch == null) return
+    e.preventDefault()
+    evaluate(typedRef.current + ch)
   }
 
   if (!current) return null
@@ -189,13 +269,23 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
         <div className="rounded-full border-2 border-border bg-card px-4 py-2 text-sm font-bold shadow-pop">
           {index + 1}/{questions.length}
         </div>
-        <button
-          onClick={pause}
-          className="pop-tap rounded-full border-2 border-border bg-card px-4 py-2 text-sm font-bold shadow-pop"
-          aria-label="一時停止 (ESC)"
-        >
-          ⏸ ESC
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleMute}
+            className="pop-tap grid size-10 place-items-center rounded-full border-2 border-border bg-card shadow-pop"
+            aria-label={muted ? "音を鳴らす" : "音を消す"}
+            aria-pressed={muted}
+          >
+            {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
+          </button>
+          <button
+            onClick={pause}
+            className="pop-tap rounded-full border-2 border-border bg-card px-4 py-2 text-sm font-bold shadow-pop"
+            aria-label="一時停止 (ESC)"
+          >
+            ⏸ ESC
+          </button>
+        </div>
       </div>
 
       {/* Progress bar */}
@@ -268,8 +358,8 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
       {/* Hidden input captures keystrokes */}
       <input
         ref={inputRef}
-        value={typed}
-        onChange={handleChange}
+        value=""
+        readOnly
         onKeyDown={handleKeyDown}
         onBlur={() => {
           if (!overlayOpen) setTimeout(() => inputRef.current?.focus(), 0)
