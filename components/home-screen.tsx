@@ -6,7 +6,7 @@ import { Atom, Zap, Settings, Trophy, Clock, Trash2 } from "lucide-react"
 import { PopButton } from "./pop-button"
 import { ApiKeyDialog } from "./api-key-dialog"
 import { Mascot } from "./mascot"
-import { getStats, clearStats, type PlayStat } from "@/lib/storage"
+import { getRange, getStats, clearStats, type PlayStat } from "@/lib/storage"
 import { formatTime } from "@/lib/types"
 import type { Category } from "@/lib/quiz-data"
 
@@ -18,6 +18,7 @@ const CAT_LABEL: Record<Category, string> = {
   element: "元素記号",
   ion: "イオン式",
 }
+const RANGE_LABEL = { all: "全問", "10": "10問", "50": "50問", weak: "苦手10問" } as const
 
 // Faint chemistry symbols drifting behind the home content — purely thematic.
 const FLOATING: { t: string; top: string; left: string; size: string; delay: string }[] = [
@@ -157,7 +158,7 @@ export function HomeScreen({ onSelectCategory }: { onSelectCategory: (c: Categor
                     <div className="text-xs font-medium text-muted-foreground">
                       {new Date(s.date).toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                       {" ・ "}
-                      {s.count}問
+                      {RANGE_LABEL[getRange(s)]} ・ {s.count}問
                     </div>
                   </div>
                   <div className="flex items-center gap-1 font-mono text-lg font-black tabular-nums text-primary">

@@ -8,7 +8,7 @@ import { formatTime } from "@/lib/types"
 import type { AnsweredItem, GameConfig, GameResult, QuestionResult } from "@/lib/types"
 import { buildQuestions, shuffle, type Question } from "@/lib/quiz-data"
 import { sound } from "@/lib/sound"
-import { getSoundEnabled, setSoundEnabled } from "@/lib/storage"
+import { getMistakeScores, getSoundEnabled, mistakeKey, setSoundEnabled } from "@/lib/storage"
 import { PopButton } from "./pop-button"
 import { AiChat } from "./ai-chat"
 import { Burst, PraisePop, ComboBadge, SpecialCelebration } from "./game-fx"
@@ -20,10 +20,24 @@ interface Props {
 }
 
 export function GameScreen({ config, onFinish, onQuit }: Props) {
-  const questions = useMemo<Question[]>(
-    () => shuffle(buildQuestions(config.category, config.direction)),
-    [config],
-  )
+  const questions = useMemo<Question[]>(() => {
+    const all = shuffle(buildQuestions(config.category, config.direction))
+    if (config.range === "all") return all
+    if (config.range === "10") return all.slice(0, 10)
+    if (config.range === "50") return all.slice(0, 50)
+
+    const scores = getMistakeScores()
+    const ranked = all
+      .filter((question) => (scores[mistakeKey(config.category, config.direction, question.id)] ?? 0) > 0)
+      .sort(
+        (a, b) =>
+          (scores[mistakeKey(config.category, config.direction, b.id)] ?? 0) -
+          (scores[mistakeKey(config.category, config.direction, a.id)] ?? 0),
+      )
+    const selectedIds = new Set(ranked.slice(0, 10).map((question) => question.id))
+    const fillers = all.filter((question) => !selectedIds.has(question.id))
+    return [...ranked.slice(0, 10), ...fillers].slice(0, 10)
+  }, [config])
 
   const [index, setIndex] = useState(0)
   const [typed, setTyped] = useState("")
@@ -53,6 +67,8 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
   const typedRef = useRef("")
 
   const results = useRef<QuestionResult[]>([])
+  const finishedRef = useRef(false)
+  const mistakeCountRef = useRef(0)
   const startRef = useRef<number>(performance.now())
   const qStartRef = useRef<number>(performance.now())
   const pausedAccRef = useRef<number>(0)
@@ -170,18 +186,22 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
 
   const advance = useCallback(
     (q: Question, hinted: boolean) => {
+      if (finishedRef.current) return
+      const isLast = index + 1 >= questions.length
+      if (isLast) finishedRef.current = true
       results.current.push({
         id: q.id,
         prompt: q.prompt,
         answerDisplay: q.answerDisplay,
         ms: performance.now() - qStartRef.current,
         usedHint: hinted,
+        mistakes: mistakeCountRef.current,
       })
       setAnswered((prev) => [
         ...prev,
         { prompt: q.prompt, answerDisplay: q.answerDisplay, usedHint: hinted, category: config.category },
       ])
-      if (index + 1 >= questions.length) {
+      if (isLast) {
         const rs = results.current
         let slowest = rs[0]
         for (const r of rs) if (r.ms > slowest.ms) slowest = r
@@ -199,6 +219,7 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
       setTyped("")
       setHintLevel(0)
       setUsedHint(false)
+      mistakeCountRef.current = 0
       qStartRef.current = performance.now()
     },
     [index, questions.length, config, onFinish],
@@ -206,6 +227,7 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
 
   const wrongTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const triggerWrong = useCallback(() => {
+    mistakeCountRef.current += 1
     setWrong(true)
     sound.wrong()
     // A miss breaks the streak.
