@@ -1,10 +1,11 @@
 "use client"
 
-import { useMemo } from "react"
+import { useEffect, useMemo } from "react"
 import { motion } from "framer-motion"
 import { formatTime } from "@/lib/types"
 import type { GameResult } from "@/lib/types"
 import { getStats } from "@/lib/storage"
+import { sound } from "@/lib/sound"
 import { PopButton } from "./pop-button"
 
 interface Props {
@@ -28,6 +29,11 @@ export function ResultScreen({ result, onRetry, onHome }: Props) {
     const rank = times.filter((t) => t < result.totalMs).length + 1
     return { best, isNewBest, rank }
   }, [result])
+
+  // Celebrate the clear with a short fanfare.
+  useEffect(() => {
+    sound.clear()
+  }, [])
 
   const hinted = result.results.filter((r) => r.usedHint)
   const avgMs = result.totalMs / result.results.length

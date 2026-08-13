@@ -3,6 +3,7 @@ import type { Category, Direction } from "./quiz-data"
 const STATS_KEY = "chemtype_stats_v1"
 const APIKEY_KEY = "chemtype_gemini_key_v1"
 const CHATS_KEY = "chemtype_chats_v1"
+const SOUND_KEY = "chemtype_sound_v1"
 
 export interface PlayStat {
   id: string
@@ -68,6 +69,15 @@ export function getApiKey(): string {
 
 export function setApiKey(key: string) {
   write(APIKEY_KEY, key)
+}
+
+// ---- Sound ----
+export function getSoundEnabled(): boolean {
+  return read<boolean>(SOUND_KEY, true)
+}
+
+export function setSoundEnabled(v: boolean) {
+  write(SOUND_KEY, v)
 }
 
 // ---- Chats ----

@@ -161,6 +161,63 @@ export function checkRomaji(reading: string, typedRaw: string): RomajiResult {
   return "no"
 }
 
+/**
+ * Count how many answer display-characters the user has ALREADY fully typed.
+ * Used so a hint reveals the next unknown character rather than one the player
+ * has already entered. Returns the number of leading readingChars() groups that
+ * the typed romaji has completely produced.
+ */
+export function completedReadingCount(reading: string, typedRaw: string): number {
+  const kana = toHiragana(reading)
+  const typed = typedRaw.toLowerCase()
+  const R = typed.length
+  const K = kana.length
+
+  const visited = new Set<string>()
+  const stack: Array<[number, number]> = [[0, 0]]
+  let maxKi = 0
+
+  while (stack.length) {
+    const [ri, ki] = stack.pop()!
+    const key = ri + "," + ki
+    if (visited.has(key)) continue
+    visited.add(key)
+
+    if (ri === R) {
+      // All typed romaji consumed exactly at a kana boundary.
+      if (ki > maxKi) maxKi = ki
+      continue
+    }
+    if (ki === K) continue
+
+    const rest = typed.slice(ri)
+    for (const token of tokensAt(kana, ki)) {
+      for (const opt of token.options) {
+        if (rest.startsWith(opt)) {
+          // A whole kana token is finished -> boundary advances.
+          stack.push([ri + opt.length, ki + token.len])
+        } else if (opt.startsWith(rest)) {
+          // Typed ends mid-token: this boundary (ki) is already complete.
+          if (ki > maxKi) maxKi = ki
+        }
+      }
+    }
+  }
+
+  // Convert the raw kana index into a count of display-character groups.
+  const groups = readingChars(reading)
+  let raw = 0
+  let count = 0
+  for (const g of groups) {
+    const gl = Array.from(g).length
+    if (raw + gl <= maxKi) {
+      raw += gl
+      count++
+    } else break
+  }
+  return count
+}
+
 // Split a reading into display characters (for progressive hint reveal).
 export function readingChars(reading: string): string[] {
   const chars: string[] = []
