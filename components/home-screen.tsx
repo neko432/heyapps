@@ -26,14 +26,14 @@ const TROPHY_CHEERS = [
 ]
 const SECRET_CHEERS = ["秘密の反応、大成功！君の好奇心は満点！", "発見おめでとう！挑戦する君はかっこいい！"]
 const FLOATING = [
-  { t: "H", top: "10%", left: "5%", size: "text-6xl", delay: "0s", cheer: "Hを発見！小さな一歩が大きな自信になるよ！" },
-  { t: "O²⁻", top: "16%", left: "80%", size: "text-4xl", delay: "0.7s", cheer: "O²⁻を発見！今日の集中力、いい調子！" },
-  { t: "Na⁺", top: "66%", left: "8%", size: "text-5xl", delay: "1.3s", cheer: "Na⁺を発見！ひとつずつ覚えれば大丈夫！" },
-  { t: "Fe", top: "80%", left: "82%", size: "text-6xl", delay: "0.4s", cheer: "Feを発見！鉄のように粘り強くいこう！" },
-  { t: "Cl⁻", top: "40%", left: "91%", size: "text-3xl", delay: "1s", cheer: "Cl⁻を発見！その好奇心が学ぶ力だよ！" },
-  { t: "Mg²⁺", top: "52%", left: "2%", size: "text-3xl", delay: "1.7s", cheer: "Mg²⁺を発見！君なら次の一問もできる！" },
-  { t: "He", top: "88%", left: "38%", size: "text-4xl", delay: "0.5s", cheer: "Heを発見！軽やかに楽しく続けよう！" },
-  { t: "Ca²⁺", top: "30%", left: "48%", size: "text-3xl", delay: "1.1s", cheer: "Ca²⁺を発見！積み重ねが君を強くするよ！" },
+  { t: "H", top: "10%", side: "left", offset: "6%", size: "text-6xl", delay: "0s", cheer: "Hを発見！小さな一歩が大きな自信になるよ！" },
+  { t: "O²⁻", top: "16%", side: "right", offset: "7%", size: "text-4xl", delay: "0.7s", cheer: "O²⁻を発見！今日の集中力、いい調子！" },
+  { t: "Na⁺", top: "66%", side: "left", offset: "7%", size: "text-5xl", delay: "1.3s", cheer: "Na⁺を発見！ひとつずつ覚えれば大丈夫！" },
+  { t: "Fe", top: "80%", side: "right", offset: "8%", size: "text-6xl", delay: "0.4s", cheer: "Feを発見！鉄のように粘り強くいこう！" },
+  { t: "Cl⁻", top: "40%", side: "right", offset: "3%", size: "text-3xl", delay: "1s", cheer: "Cl⁻を発見！その好奇心が学ぶ力だよ！" },
+  { t: "Mg²⁺", top: "52%", side: "left", offset: "2%", size: "text-3xl", delay: "1.7s", cheer: "Mg²⁺を発見！君なら次の一問もできる！" },
+  { t: "He", top: "88%", side: "left", offset: "12%", size: "text-4xl", delay: "0.5s", cheer: "Heを発見！軽やかに楽しく続けよう！" },
+  { t: "Ca²⁺", top: "30%", side: "right", offset: "12%", size: "text-3xl", delay: "1.1s", cheer: "Ca²⁺を発見！積み重ねが君を強くするよ！" },
 ]
 
 function chooseDifferent(pool: string[], previous: string) {
@@ -47,9 +47,19 @@ function Confetti({ seed }: { seed: number }) {
 
 function FloatingSymbols({ onDiscover }: { onDiscover: (message: string) => void }) {
   return (
-    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+    <div className="pointer-events-none fixed inset-0 z-0 hidden overflow-hidden 2xl:block">
       {FLOATING.map((f, i) => (
-        <motion.button key={f.t} type="button" tabIndex={0} aria-label={`${f.t}の隠し元素を見つける`} onClick={() => onDiscover(f.cheer)} whileHover={{ opacity: 0.28, scale: 1.15 }} whileTap={{ scale: 1.5, rotate: 18 }} className={`secret-element pointer-events-auto absolute cursor-pointer font-black ${f.size} ${i % 2 === 0 ? "text-primary" : "text-pop-teal"}`} style={{ top: f.top, left: f.left, animationDelay: f.delay }}>
+        <motion.button
+          key={f.t}
+          type="button"
+          tabIndex={0}
+          aria-label={`${f.t}の隠し元素を見つける`}
+          onClick={() => onDiscover(f.cheer)}
+          whileHover={{ opacity: 0.28, scale: 1.15 }}
+          whileTap={{ scale: 1.5, rotate: 18 }}
+          className={`secret-element pointer-events-auto absolute cursor-pointer font-black ${f.size} ${i % 2 === 0 ? "text-primary" : "text-pop-teal"}`}
+          style={{ top: f.top, [f.side]: f.offset, animationDelay: f.delay }}
+        >
           {f.t}
         </motion.button>
       ))}
@@ -111,7 +121,7 @@ export function HomeScreen({ onSelectCategory }: { onSelectCategory: (c: Categor
   ]
 
   return (
-    <div className="relative mx-auto flex min-h-svh w-full max-w-3xl flex-col px-5 py-8">
+    <div className="relative z-10 mx-auto flex min-h-svh w-full max-w-6xl flex-col px-5 py-8 md:px-8 xl:px-10">
       <FloatingSymbols onDiscover={reveal} />
       <header className="mb-8 flex items-start justify-between gap-4">
         <div>
