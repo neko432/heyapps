@@ -1,16 +1,27 @@
 import type { Category, Direction } from "./quiz-data"
 
+export type PlayRange = "all" | "10" | "50" | "weak"
+
 export interface QuestionResult {
   id: string
   prompt: string
   answerDisplay: string
   ms: number
   usedHint: boolean
+  mistakes: number
 }
 
 export interface GameConfig {
   category: Category
   direction: Direction
+  range: PlayRange
+}
+
+export interface ResultAchievement {
+  isFirstClear: boolean
+  isNewBest: boolean
+  previousBest?: number
+  rank: number
 }
 
 export interface GameResult extends GameConfig {

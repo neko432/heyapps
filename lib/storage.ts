@@ -1,6 +1,8 @@
 import type { Category, Direction } from "./quiz-data"
+import type { PlayRange, QuestionResult } from "./types"
 
 const STATS_KEY = "chemtype_stats_v1"
+const MISTAKES_KEY = "chemtype_mistakes_v1"
 const APIKEY_KEY = "chemtype_gemini_key_v1"
 const CHATS_KEY = "chemtype_chats_v1"
 const SOUND_KEY = "chemtype_sound_v1"
@@ -14,6 +16,19 @@ export interface PlayStat {
   date: number
   slowestPrompt: string
   slowestMs: number
+  range?: PlayRange
+}
+
+export type MistakeScores = Record<string, number>
+
+export function getRange(stat: PlayStat): PlayRange {
+  if (stat.range) return stat.range
+  // Records created before range selection existed were always full-set plays.
+  return "all"
+}
+
+export function mistakeKey(category: Category, direction: Direction, questionId: string) {
+  return `${category}:${direction}:${questionId}`
 }
 
 export interface ChatMessage {
@@ -58,8 +73,24 @@ export function addStat(stat: PlayStat) {
   write(STATS_KEY, stats.slice(-100))
 }
 
+export function getMistakeScores(): MistakeScores {
+  return read<MistakeScores>(MISTAKES_KEY, {})
+}
+
+export function addMistakes(category: Category, direction: Direction, results: QuestionResult[]) {
+  const scores = getMistakeScores()
+  for (const result of results) {
+    if (result.mistakes > 0) {
+      const key = mistakeKey(category, direction, result.id)
+      scores[key] = (scores[key] ?? 0) + result.mistakes
+    }
+  }
+  write(MISTAKES_KEY, scores)
+}
+
 export function clearStats() {
   write(STATS_KEY, [])
+  write(MISTAKES_KEY, {})
 }
 
 // ---- API key ----
