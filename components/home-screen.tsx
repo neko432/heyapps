@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import { Atom, Zap, Settings, Trophy, Clock, Trash2 } from "lucide-react"
 import { PopButton } from "./pop-button"
 import { ApiKeyDialog } from "./api-key-dialog"
+import { Mascot } from "./mascot"
 import { getStats, clearStats, type PlayStat } from "@/lib/storage"
 import { formatTime } from "@/lib/types"
 import type { Category } from "@/lib/quiz-data"
@@ -64,13 +65,21 @@ export function HomeScreen({ onSelectCategory }: { onSelectCategory: (c: Categor
       <FloatingSymbols />
       <header className="mb-8 flex items-start justify-between">
         <div>
-          <motion.h1
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl font-black tracking-tight sm:text-5xl"
-          >
-            <span className="text-primary">元素</span>タイピング
-          </motion.h1>
+          {/* Each character springs in one-by-one, and wiggles on hover. */}
+          <h1 className="text-4xl font-black tracking-tight sm:text-5xl">
+            {["元", "素", "タ", "イ", "ピ", "ン", "グ"].map((ch, i) => (
+              <motion.span
+                key={i}
+                initial={{ opacity: 0, y: 26, rotate: -10, scale: 0.6 }}
+                animate={{ opacity: 1, y: 0, rotate: 0, scale: 1 }}
+                transition={{ delay: 0.35 + i * 0.06, type: "spring", stiffness: 420, damping: 15 }}
+                whileHover={{ y: -8, rotate: i % 2 === 0 ? 8 : -8, scale: 1.15 }}
+                className={`inline-block ${i < 2 ? "text-primary" : ""}`}
+              >
+                {ch}
+              </motion.span>
+            ))}
+          </h1>
           <p className="mt-2 font-bold text-muted-foreground">元素記号・イオン式をタイピングでおぼえよう！</p>
         </div>
         <PopButton variant="outline" size="sm" onClick={() => setShowKey(true)} aria-label="設定">
@@ -161,6 +170,8 @@ export function HomeScreen({ onSelectCategory }: { onSelectCategory: (c: Categor
           </ul>
         )}
       </section>
+
+      <Mascot />
 
       <AnimatePresence>{showKey && <ApiKeyDialog onClose={() => setShowKey(false)} />}</AnimatePresence>
     </div>

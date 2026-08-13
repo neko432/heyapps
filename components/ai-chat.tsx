@@ -96,7 +96,7 @@ export function AiChat({ answered, onClose }: Props) {
 
   function askAbout(item: AnsweredItem) {
     const label = item.category === "element" ? "元素" : "イオン"
-    send(`${item.answerDisplay}（${item.prompt}）という${label}について、中学生にもわかるように説明して！`)
+    send(`${item.answerDisplay}（${item.prompt}）という${label}について教えて！`)
   }
 
   function createNewChat() {
@@ -143,7 +143,7 @@ export function AiChat({ answered, onClose }: Props) {
                 ☰ 履歴
               </button>
               <span className="max-w-[9rem] truncate text-sm font-black text-secondary-foreground">
-                {active?.title ?? "AI先生"}
+                {active?.title ?? "AIチャット"}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -205,7 +205,7 @@ export function AiChat({ answered, onClose }: Props) {
           <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
             {active && active.messages.length === 0 && (
               <div className="m-auto max-w-xs text-center text-sm font-bold text-muted-foreground">
-                AI先生になんでも質問してみよう！
+                AIになんでも質問してみよう！
                 <br />
                 右の一覧から元素をタップすると解説してくれるよ。
               </div>

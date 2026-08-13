@@ -29,7 +29,7 @@ const rampart = Rampart_One({
 export const metadata: Metadata = {
   title: '元素タイピング｜元素記号・イオン式をおぼえよう',
   description:
-    '元素記号とイオン式をタイピングでおぼえる学習ゲーム。全118元素と中学レベルのイオンに対応。AI先生に質問もできます。',
+    '元素記号とイオン式をタイピングでおぼえる学習ゲーム。全118元素と中学レベルのイオンに対応。AIに質問もできます。',
   generator: 'v0.app',
 }
 

@@ -173,3 +173,53 @@
 .animate-pop-bob {
   animation: pop-bob 1.8s ease-in-out infinite;
 }
+
+/* ------------------------------------------------------------------------
+   yui540-inspired curtain wipe — staggered colored panels sweep the screen
+   between views, with a hard theatrical easing. transform-origin flips
+   between cover (grows from top) and reveal (shrinks to bottom).
+   ------------------------------------------------------------------------ */
+@keyframes curtain-in {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+@keyframes curtain-out {
+  from { transform: scaleY(1); }
+  to { transform: scaleY(0); }
+}
+.curtain-panel-in {
+  transform-origin: top;
+  animation: curtain-in 0.38s cubic-bezier(0.83, 0, 0.17, 1) both;
+}
+.curtain-panel-out {
+  transform-origin: bottom;
+  animation: curtain-out 0.38s cubic-bezier(0.83, 0, 0.17, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .curtain-panel-in,
+  .curtain-panel-out {
+    animation-duration: 1ms;
+    animation-delay: 0ms !important;
+  }
+}
+
+/* Mascot: slow orbiting electron ring. */
+@keyframes mascot-orbit {
+  to { transform: rotate(360deg); }
+}
+.animate-mascot-orbit {
+  animation: mascot-orbit 7s linear infinite;
+}
+
+/* Mascot: periodic eye blink, like yui540's toy-ish characters. */
+@keyframes mascot-blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  94% { transform: scaleY(0.08); }
+}
+.mascot-eye {
+  width: 7px;
+  height: 12px;
+  border-radius: 999px;
+  background: oklch(0.28 0.05 285);
+  animation: mascot-blink 3.6s ease-in-out infinite;
+}
