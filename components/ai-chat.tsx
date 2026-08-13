@@ -23,56 +23,6 @@ function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
 }
 
-// Render inline **bold** segments within a single line of text.
-function renderInline(text: string) {
-  const segments = text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean)
-  return segments.map((seg, i) => {
-    if (seg.startsWith("**") && seg.endsWith("**")) {
-      return (
-        <strong key={i} className="font-black">
-          {seg.slice(2, -2)}
-        </strong>
-      )
-    }
-    return <span key={i}>{seg}</span>
-  })
-}
-
-// Lightweight Markdown-ish renderer for the AI replies so bullets, headings and
-// bold text display cleanly instead of showing raw "*" and "**" characters.
-function MarkdownLite({ text }: { text: string }) {
-  const lines = text.split("\n")
-  return (
-    <div className="space-y-1.5">
-      {lines.map((raw, i) => {
-        const line = raw.trimEnd()
-        if (!line.trim()) return <div key={i} className="h-1.5" />
-
-        const heading = line.match(/^(#{1,3})\s+(.*)$/)
-        if (heading) {
-          return (
-            <p key={i} className="text-base font-black">
-              {renderInline(heading[2])}
-            </p>
-          )
-        }
-
-        const bullet = line.match(/^\s*[-*]\s+(.*)$/)
-        if (bullet) {
-          return (
-            <div key={i} className="flex gap-2 pl-1">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-              <span>{renderInline(bullet[1])}</span>
-            </div>
-          )
-        }
-
-        return <p key={i}>{renderInline(line)}</p>
-      })}
-    </div>
-  )
-}
-
 function newSession(): ChatSession {
   return { id: uid(), title: "新しいチャット", createdAt: Date.now(), messages: [] }
 }
@@ -265,13 +215,13 @@ export function AiChat({ answered, onClose }: Props) {
                 key={i}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`max-w-[85%] rounded-2xl border-2 border-border px-4 py-2.5 text-sm font-medium leading-relaxed shadow-pop ${
+                className={`max-w-[85%] whitespace-pre-wrap rounded-2xl border-2 border-border px-4 py-2.5 text-sm font-medium leading-relaxed shadow-pop ${
                   m.role === "user"
-                    ? "self-end whitespace-pre-wrap bg-primary text-primary-foreground"
+                    ? "self-end bg-primary text-primary-foreground"
                     : "self-start bg-card text-card-foreground"
                 }`}
               >
-                {m.role === "assistant" ? <MarkdownLite text={m.content} /> : m.content}
+                {m.content}
               </motion.div>
             ))}
             {loading && (

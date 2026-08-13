@@ -1,11 +1,8 @@
 import type { ChatMessage } from "./storage"
 
-// Pinned to a specific stable model instead of a "latest" alias on purpose:
-// the alias can resolve to a thinking model whose reasoning tokens eat into the
-// output budget and whose "thought" parts leak into the reply, producing
-// garbled / truncated messages. gemini-2.5-flash is stable and lets us disable
-// thinking explicitly below.
-const MODEL = "gemini-2.5-flash"
+// "gemini-flash-latest" is an alias that always resolves to the current stable
+// Flash model, so we don't break again when a specific version is retired.
+const MODEL = "gemini-flash-latest"
 
 const SYSTEM_PROMPT =
   "あなたは中学生に化学を教える、親しみやすくて元気な先生です。" +
@@ -29,13 +26,7 @@ export async function callGemini(apiKey: string, history: ChatMessage[]): Promis
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
       contents,
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 2048,
-        // Turn off "thinking" so the whole token budget goes to the actual
-        // answer (no truncation) and no reasoning parts leak into the reply.
-        thinkingConfig: { thinkingBudget: 0 },
-      },
+      generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
     }),
   })
 
@@ -57,25 +48,6 @@ export async function callGemini(apiKey: string, history: ChatMessage[]): Promis
   }
 
   const data = await res.json()
-  const candidate = data?.candidates?.[0]
-
-  // Only keep real answer parts — drop any "thought" parts so internal
-  // reasoning can never leak into the visible reply.
-  const parts: { text?: string; thought?: boolean }[] = candidate?.content?.parts ?? []
-  const text = parts
-    .filter((p) => !p.thought)
-    .map((p) => p.text ?? "")
-    .join("")
-    .trim()
-
-  if (text) return text
-
-  // No usable text: give a reason-specific hint instead of a silent blank.
-  if (candidate?.finishReason === "MAX_TOKENS") {
-    return "答えが長くなりすぎたみたい。もう少し具体的に質問してみてね。"
-  }
-  if (candidate?.finishReason === "SAFETY") {
-    return "その内容にはうまく答えられませんでした。別の聞き方で試してみてね。"
-  }
-  return "うまく答えを生成できませんでした。もう一度試してみてください。"
+  const text = data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("") ?? ""
+  return text.trim() || "うまく答えを生成できませんでした。もう一度試してみてください。"
 }
