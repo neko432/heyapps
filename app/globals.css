@@ -211,6 +211,16 @@
   animation: mascot-orbit 7s linear infinite;
 }
 
+/* Mascot: subtle idle bob so it feels alive without being distracting. */
+@keyframes mascot-idle {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  30% { transform: translateY(-3px) rotate(-2deg); }
+  60% { transform: translateY(0) rotate(2deg); }
+}
+.animate-mascot-idle {
+  animation: mascot-idle 3.2s ease-in-out infinite;
+}
+
 /* Mascot: periodic eye blink, like yui540's toy-ish characters. */
 @keyframes mascot-blink {
   0%, 90%, 100% { transform: scaleY(1); }

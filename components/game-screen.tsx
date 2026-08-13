@@ -45,6 +45,8 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
   const [praise, setPraise] = useState<{ id: number; text: string; tone: string } | null>(null)
   // Set to a fresh id whenever the rare special celebration fires.
   const [special, setSpecial] = useState<number | null>(null)
+  // yui540-style stamp countdown before typing begins (3 → 2 → 1 → GO).
+  const [countdown, setCountdown] = useState<number | null>(3)
 
   // Source of truth for typed input. Updated synchronously on every keystroke so
   // rapid typing can't drop characters to a stale React state value.
@@ -69,6 +71,23 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
     }
     return typed.length
   }, [current, typed])
+
+  // Run the intro countdown, then reset the clocks so wait time isn't counted.
+  useEffect(() => {
+    if (countdown === null) return
+    if (countdown === 0) {
+      const t = setTimeout(() => {
+        setCountdown(null)
+        startRef.current = performance.now()
+        qStartRef.current = performance.now()
+        inputRef.current?.focus()
+      }, 620)
+      return () => clearTimeout(t)
+    }
+    sound.hint()
+    const t = setTimeout(() => setCountdown((c) => (c ?? 1) - 1), 720)
+    return () => clearTimeout(t)
+  }, [countdown])
 
   // Load the saved sound preference and unlock the audio context.
   useEffect(() => {
@@ -108,7 +127,8 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
     if (!overlayOpen) inputRef.current?.focus()
   }, [overlayOpen, index])
 
-  const elapsed = now - startRef.current - pausedAccRef.current
+  // Show 0:00 while the countdown plays — the clocks reset when it ends.
+  const elapsed = countdown !== null ? 0 : now - startRef.current - pausedAccRef.current
 
   const pause = useCallback(() => {
     setPaused((p) => {
@@ -135,6 +155,7 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
     function onKey(e: KeyboardEvent) {
       if (e.key !== "Escape") return
       e.preventDefault()
+      if (countdown !== null) return
       if (showChat || showQuitConfirm) {
         setShowChat(false)
         setShowQuitConfirm(false)
@@ -145,7 +166,7 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [paused, showChat, showQuitConfirm, pause, resume])
+  }, [paused, showChat, showQuitConfirm, pause, resume, countdown])
 
   const advance = useCallback(
     (q: Question, hinted: boolean) => {
@@ -292,7 +313,7 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
   // All typing is handled here (not via input onChange) so it is immune to IME
   // composition and controlled-input lag under fast typing.
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (overlayOpen) return
+    if (overlayOpen || countdown !== null) return
     // Let browser/OS shortcuts through untouched.
     if (e.metaKey || e.ctrlKey || e.altKey) return
 
@@ -525,6 +546,40 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
 
       {/* Rare full-screen special celebration. */}
       <AnimatePresence>{special != null && <SpecialCelebration key={special} seed={special} />}</AnimatePresence>
+
+      {/* Intro countdown — each number stamps in like a yui540 impact motion. */}
+      <AnimatePresence>
+        {countdown !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.25 } }}
+            className="absolute inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-sm"
+          >
+            <AnimatePresence mode="popLayout">
+              <motion.span
+                key={countdown}
+                initial={{ scale: 2.6, opacity: 0, rotate: -14 }}
+                animate={{ scale: 1, opacity: 1, rotate: countdown === 0 ? 0 : countdown % 2 === 0 ? -4 : 4 }}
+                exit={{ scale: 0.5, opacity: 0, transition: { duration: 0.12 } }}
+                transition={{ type: "spring", stiffness: 500, damping: 22 }}
+                className="font-pop select-none text-8xl sm:text-9xl"
+                style={{
+                  color:
+                    countdown === 0
+                      ? "var(--primary)"
+                      : ["var(--pop-teal)", "var(--pop-orange)", "var(--pop-pink)"][countdown % 3],
+                  WebkitTextStroke: "4px var(--card)",
+                  paintOrder: "stroke",
+                  filter: "drop-shadow(0 6px 0 color-mix(in oklch, var(--foreground) 22%, transparent))",
+                }}
+              >
+                {countdown === 0 ? "スタート！" : countdown}
+              </motion.span>
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -6,8 +6,8 @@ import { useEffect, useState, type ReactNode } from "react"
 // yui540-inspired screen transition.
 // When `transitionKey` changes, staggered colored panels sweep down and
 // cover the screen, the content swaps while hidden, then the panels
-// retract upward to reveal the new screen. Also plays once on first load
-// as an "opening curtain".
+// retract upward to reveal the new screen. First paint shows the content
+// immediately (no opening curtain).
 // -------------------------------------------------------------------------
 
 const PANEL_COLORS = ["var(--pop-pink)", "var(--pop-yellow)", "var(--pop-teal)", "var(--primary)"]
@@ -26,8 +26,8 @@ export function CurtainTransition({
   children: ReactNode
 }) {
   const [shown, setShown] = useState(() => ({ key: transitionKey, node: children }))
-  // Start in "reveal" so the first paint opens like a stage curtain.
-  const [phase, setPhase] = useState<Phase>("reveal")
+  // Start in "idle" — no curtain on first load, only between screens.
+  const [phase, setPhase] = useState<Phase>("idle")
 
   useEffect(() => {
     // Same screen: just keep the rendered children fresh (state updates etc).
