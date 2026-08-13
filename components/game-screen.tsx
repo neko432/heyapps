@@ -369,7 +369,7 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
   const progress = (index / questions.length) * 100
 
   return (
-    <div className="relative mx-auto flex min-h-dvh max-w-2xl flex-col px-5 py-6">
+    <div className="relative mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-5 py-6 md:px-8 xl:px-10">
       {/* Top bar */}
       <div className="flex items-center justify-between gap-3">
         <div className="rounded-full border-2 border-border bg-secondary px-4 py-2 font-mono text-base font-bold tabular-nums text-secondary-foreground shadow-pop">
