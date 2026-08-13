@@ -11,7 +11,6 @@ import {
   type ChatSession,
 } from "@/lib/storage"
 import type { AnsweredItem } from "@/lib/types"
-import { PopButton } from "./pop-button"
 import { ApiKeyDialog } from "./api-key-dialog"
 
 interface Props {

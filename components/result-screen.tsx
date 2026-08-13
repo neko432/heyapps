@@ -1,16 +1,17 @@
 "use client"
 
-import { useEffect, useMemo } from "react"
+import { useEffect } from "react"
 import { motion } from "framer-motion"
+import { Award, Check, Snail } from "lucide-react"
 import { formatTime } from "@/lib/types"
-import type { GameResult } from "@/lib/types"
-import { getStats } from "@/lib/storage"
+import type { GameResult, ResultAchievement } from "@/lib/types"
 import { sound } from "@/lib/sound"
 import { PopButton } from "./pop-button"
 import { ConfettiRain } from "./game-fx"
 
 interface Props {
   result: GameResult
+  achievement: ResultAchievement
   onRetry: () => void
   onHome: () => void
 }
@@ -18,18 +19,8 @@ interface Props {
 const catLabel: Record<string, string> = { element: "元素記号", ion: "イオン" }
 const dirLabel: Record<string, string> = { toName: "→ 名前", toSymbol: "→ 記号・化学式" }
 
-export function ResultScreen({ result, onRetry, onHome }: Props) {
-  // Compare against previous best for the same mode.
-  const { best, isNewBest, rank } = useMemo(() => {
-    const same = getStats().filter(
-      (s) => s.category === result.category && s.direction === result.direction,
-    )
-    const times = same.map((s) => s.totalMs).sort((a, b) => a - b)
-    const best = times.length ? times[0] : result.totalMs
-    const isNewBest = result.totalMs <= best
-    const rank = times.filter((t) => t < result.totalMs).length + 1
-    return { best, isNewBest, rank }
-  }, [result])
+export function ResultScreen({ result, achievement, onRetry, onHome }: Props) {
+  const { isFirstClear, isNewBest, previousBest, rank } = achievement
 
   // Celebrate the clear with a short fanfare.
   useEffect(() => {
@@ -49,8 +40,10 @@ export function ResultScreen({ result, onRetry, onHome }: Props) {
         transition={{ type: "spring", stiffness: 240, damping: 16 }}
         className="text-center"
       >
-        <div className="text-6xl">{isNewBest ? "🏆" : "✨"}</div>
-        <h1 className="mt-2 text-3xl font-black text-balance">
+        <motion.div initial={{ scale: 0, rotate: -25 }} animate={{ scale: 1, rotate: 0 }} transition={{ delay: 0.08, type: "spring", stiffness: 420, damping: 14 }} className={`mx-auto grid size-20 place-items-center rounded-full ${isNewBest ? "bg-pop-yellow text-foreground" : "bg-pop-teal text-card"}`}>
+          {isNewBest ? <Award className="size-11" /> : <Check className="size-11" />}
+        </motion.div>
+        <h1 className="mt-3 text-3xl font-black text-balance">
           {isNewBest ? "自己ベスト更新！" : "クリア！"}
         </h1>
         <p className="mt-1 text-sm font-bold text-muted-foreground">
@@ -69,11 +62,15 @@ export function ResultScreen({ result, onRetry, onHome }: Props) {
         <p className="mt-1 font-mono text-6xl font-black tabular-nums text-primary">
           {formatTime(result.totalMs)}
         </p>
-        {!isNewBest && (
+        {isFirstClear ? (
+          <motion.p initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, type: "spring" }} className="mt-3 inline-flex rounded-full bg-pop-teal px-4 py-1.5 text-sm font-black text-card">
+            はじめてのクリア！
+          </motion.p>
+        ) : !isNewBest && previousBest !== undefined ? (
           <p className="mt-2 text-xs font-bold text-muted-foreground">
-            ベスト {formatTime(best)}・全{rank}位相当
+            ベスト {formatTime(previousBest)}・全{rank}位相当
           </p>
-        )}
+        ) : null}
       </motion.div>
 
       {/* Stat chips */}
@@ -100,7 +97,7 @@ export function ResultScreen({ result, onRetry, onHome }: Props) {
 
       {/* Slowest item callout */}
       <div className="mt-4 flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-accent px-4 py-3 text-accent-foreground shadow-pop">
-        <span className="text-2xl">🐢</span>
+        <Snail className="size-7 shrink-0" aria-hidden />
         <div className="min-w-0">
           <p className="text-[0.7rem] font-bold opacity-80">いちばん時間がかかった問題</p>
           <p className="truncate text-base font-black">
@@ -134,10 +131,13 @@ export function ResultScreen({ result, onRetry, onHome }: Props) {
               <span className="min-w-0 flex-1 truncate text-sm font-bold text-muted-foreground">
                 {r.answerDisplay}
               </span>
+              {r.mistakes > 0 && (
+                <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring" }} className="shrink-0 rounded-full bg-destructive px-2 py-0.5 text-[0.65rem] font-bold text-destructive-foreground">
+                  ミス {r.mistakes}
+                </motion.span>
+              )}
               {r.usedHint && (
-                <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-[0.65rem] font-bold text-accent-foreground">
-                  ヒント
-                </span>
+                <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-[0.65rem] font-bold text-accent-foreground">ヒント</span>
               )}
               <span className="shrink-0 font-mono text-sm font-bold tabular-nums">{formatTime(r.ms)}</span>
             </div>
