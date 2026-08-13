@@ -45,7 +45,9 @@
   color-scheme: light;
   --radius: 1.1rem;
 
-  --background: oklch(0.98 0.022 95);
+  /* Soft periwinkle that sits between purple and emerald on the wheel, so both
+     the purple element icon and the emerald ion icon harmonise with it. */
+  --background: oklch(0.972 0.021 268);
   --foreground: oklch(0.28 0.05 285);
 
   --card: oklch(1 0 0);
@@ -74,7 +76,8 @@
 
   --pop-pink: oklch(0.72 0.19 355);
   --pop-yellow: oklch(0.86 0.16 90);
-  --pop-teal: oklch(0.75 0.14 190);
+  /* Emerald green — the ion mode's signature accent. */
+  --pop-teal: oklch(0.7 0.15 162);
   --pop-blue: oklch(0.68 0.16 250);
   --pop-orange: oklch(0.75 0.17 55);
 }

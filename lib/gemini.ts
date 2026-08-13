@@ -1,6 +1,8 @@
 import type { ChatMessage } from "./storage"
 
-const MODEL = "gemini-2.0-flash"
+// "gemini-flash-latest" is an alias that always resolves to the current stable
+// Flash model, so we don't break again when a specific version is retired.
+const MODEL = "gemini-flash-latest"
 
 const SYSTEM_PROMPT =
   "あなたは中学生に化学を教える、親しみやすくて元気な先生です。" +
