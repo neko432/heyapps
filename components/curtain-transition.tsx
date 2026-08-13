@@ -19,30 +19,34 @@ type Phase = "idle" | "cover" | "reveal"
 export function CurtainTransition({ transitionKey, children }: { transitionKey: string; children: ReactNode }) {
   const [shown, setShown] = useState(() => ({ key: transitionKey, node: children }))
   const [phase, setPhase] = useState<Phase>("idle")
-  const running = useRef(false)
+  const latestChildren = useRef(children)
+  const shownKey = useRef(transitionKey)
 
   useEffect(() => {
-    if (transitionKey === shown.key) return
-    if (running.current) return
+    latestChildren.current = children
+  }, [children])
 
-    running.current = true
+  useEffect(() => {
+    if (transitionKey === shownKey.current) return
+
     setPhase("cover")
+
     const swap = window.setTimeout(() => {
       window.scrollTo(0, 0)
-      setShown({ key: transitionKey, node: children })
+      shownKey.current = transitionKey
+      setShown({ key: transitionKey, node: latestChildren.current })
       setPhase("reveal")
     }, COVER_MS)
+
     const done = window.setTimeout(() => {
       setPhase("idle")
-      running.current = false
     }, COVER_MS + REVEAL_MS)
 
     return () => {
       window.clearTimeout(swap)
       window.clearTimeout(done)
-      running.current = false
     }
-  }, [transitionKey, children, shown.key])
+  }, [transitionKey])
 
   return (
     <>

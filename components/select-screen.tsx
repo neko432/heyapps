@@ -49,7 +49,7 @@ export function SelectScreen({
       ]
 
   return (
-    <div className="mx-auto flex min-h-svh w-full max-w-3xl flex-col px-5 py-8">
+    <div className="mx-auto flex min-h-svh w-full max-w-6xl flex-col px-5 py-8 md:px-8 xl:px-10">
       <header className="mb-8 flex items-center gap-3">
         <PopButton variant="outline" size="sm" onClick={direction ? () => setDirection(null) : onBack} aria-label="もどる">
           <ArrowLeft className="size-4" />
