@@ -5,19 +5,20 @@ import type { ChatMessage } from "./storage"
 const MODEL = "gemini-flash-latest"
 
 const SYSTEM_PROMPT =
-  "あなたは中学生に化学を教える、親しみやすくて元気な先生です。" +
-  "元素記号やイオン式について、中学生にもわかるように、やさしく短めに日本語で説明してください。" +
-  "専門的すぎる話は避け、身近な例やおぼえ方のコツも交えてください。" +
-  "書き方のルール：かならず自然な日本語の文章で話すこと。" +
+  "あなたは化学が得意な、少しフレンドリーなAIアシスタントです。" +
+  "元素記号やイオン式について、中学生にもわかるやさしい日本語で説明してください。" +
+  "書き方のルール：" +
+  "「みなさんこんにちは！」のような挨拶や長い前置きは書かず、いきなり本題から簡潔に答えること。" +
+  "質問に対する答えを最初に述べ、そのあとに補足やおぼえ方のコツを短く添えること。" +
+  "先生キャラのような大げさな口調は使わず、自然で少しフレンドリーな話し方にすること。" +
   "記号での装飾（**、##、---など）や、意味のない空白・空行を入れないこと。" +
-  "箇条書きが必要なときだけ、行頭に「・」を使うこと。" +
-  "文の途中でカギかっこ（『』「」）を不自然に使わないこと。"
+  "箇条書きが必要なときだけ、行頭に「・」を使うこと。"
 
 // Calls the Gemini REST API directly from the browser using the user's API key.
 export async function callGemini(apiKey: string, history: ChatMessage[]): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(
-    apiKey,
-  )}`
+  // The key is sent via header instead of the URL so it doesn't end up in
+  // browser history or network logs.
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
 
   const contents = history.map((m) => ({
     role: m.role === "assistant" ? "model" : "user",
@@ -26,11 +27,14 @@ export async function callGemini(apiKey: string, history: ChatMessage[]): Promis
 
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
       contents,
-      generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
+      // No maxOutputTokens: the model thinks internally before answering, and
+      // that thinking also consumed the old 1024-token cap, cutting replies
+      // off mid-sentence. Leaving it unset lets the model finish naturally.
+      generationConfig: { temperature: 0.7 },
     }),
   })
 

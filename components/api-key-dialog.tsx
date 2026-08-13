@@ -44,7 +44,7 @@ export function ApiKeyDialog({ onClose }: { onClose: () => void }) {
           </button>
         </div>
         <p className="mb-3 text-sm leading-relaxed text-muted-foreground">
-          AI先生に質問するには、Google AI Studio で取得した Gemini の APIキーが必要です。キーはこのブラウザにのみ保存されます。
+          AIに質問するには、Google AI Studio で取得した Gemini の APIキーが必要です。キーはこのブラウザにのみ保存されます。
         </p>
         <a
           href="https://aistudio.google.com/app/apikey"
