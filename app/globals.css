@@ -1,0 +1,142 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-pop-pink: var(--pop-pink);
+  --color-pop-yellow: var(--pop-yellow);
+  --color-pop-teal: var(--pop-teal);
+  --color-pop-blue: var(--pop-blue);
+  --color-pop-orange: var(--pop-orange);
+
+  --font-sans: var(--font-rounded), 'Hiragino Maru Gothic ProN', sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 10px);
+  --radius-3xl: calc(var(--radius) + 18px);
+}
+
+:root {
+  color-scheme: light;
+  --radius: 1.1rem;
+
+  --background: oklch(0.975 0.015 280);
+  --foreground: oklch(0.28 0.05 285);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.28 0.05 285);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.28 0.05 285);
+
+  --primary: oklch(0.63 0.21 300);
+  --primary-foreground: oklch(0.99 0.01 300);
+
+  --secondary: oklch(0.94 0.04 300);
+  --secondary-foreground: oklch(0.4 0.12 300);
+
+  --muted: oklch(0.95 0.02 285);
+  --muted-foreground: oklch(0.55 0.04 285);
+
+  --accent: oklch(0.93 0.06 340);
+  --accent-foreground: oklch(0.4 0.15 350);
+
+  --destructive: oklch(0.62 0.24 20);
+  --destructive-foreground: oklch(0.99 0.01 20);
+
+  --border: oklch(0.9 0.03 290);
+  --input: oklch(0.9 0.03 290);
+  --ring: oklch(0.63 0.21 300);
+
+  --pop-pink: oklch(0.72 0.19 355);
+  --pop-yellow: oklch(0.86 0.16 90);
+  --pop-teal: oklch(0.75 0.14 190);
+  --pop-blue: oklch(0.68 0.16 250);
+  --pop-orange: oklch(0.75 0.17 55);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(circle at 12% 18%, color-mix(in oklch, var(--pop-pink) 22%, transparent), transparent 42%),
+      radial-gradient(circle at 88% 12%, color-mix(in oklch, var(--pop-blue) 20%, transparent), transparent 40%),
+      radial-gradient(circle at 78% 88%, color-mix(in oklch, var(--pop-teal) 20%, transparent), transparent 42%);
+    background-attachment: fixed;
+  }
+}
+
+@keyframes pop-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-pop-float {
+  animation: pop-float 4s ease-in-out infinite;
+}
+
+@keyframes pop-wiggle {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+.animate-pop-wiggle {
+  animation: pop-wiggle 2.5s ease-in-out infinite;
+}
+
+/* Chunky pop shadow used for buttons/cards. */
+.shadow-pop {
+  box-shadow: 0 6px 0 0 color-mix(in oklch, var(--foreground) 18%, transparent);
+}
+.shadow-pop-sm {
+  box-shadow: 0 4px 0 0 color-mix(in oklch, var(--foreground) 16%, transparent);
+}
+.shadow-popLg {
+  box-shadow: 0 10px 0 0 color-mix(in oklch, var(--foreground) 20%, transparent);
+}
+
+/* Wrong-answer shake for the prompt card. */
+@keyframes pop-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+.animate-shake {
+  animation: pop-shake 0.3s ease-in-out;
+}
+
+/* Typing caret blink. */
+@keyframes pop-blink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+.animate-blink {
+  animation: pop-blink 1s step-end infinite;
+}
