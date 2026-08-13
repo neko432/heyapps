@@ -76,18 +76,22 @@ export function HomeScreen({ onSelectCategory }: { onSelectCategory: (c: Categor
   const [titleSecret, setTitleSecret] = useState(false)
   const keySequence = useRef("")
   const messageTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const titleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const reveal = useCallback((next: string) => {
     setMessage(next)
     setEffectSeed((seed) => seed + 1)
     sound.correct()
     if (messageTimer.current) clearTimeout(messageTimer.current)
-    messageTimer.current = setTimeout(() => setMessage(""), 4600)
+    messageTimer.current = setTimeout(() => setMessage(""), 7000)
   }, [])
 
   useEffect(() => {
     setStats(getStats())
-    return () => { if (messageTimer.current) clearTimeout(messageTimer.current) }
+    return () => {
+      if (messageTimer.current) clearTimeout(messageTimer.current)
+      if (titleTimer.current) clearTimeout(titleTimer.current)
+    }
   }, [])
 
   useEffect(() => {
@@ -111,7 +115,8 @@ export function HomeScreen({ onSelectCategory }: { onSelectCategory: (c: Categor
       setTitlePokes(0)
       setTitleSecret(true)
       reveal(chooseDifferent(SECRET_CHEERS, message))
-      window.setTimeout(() => setTitleSecret(false), 2600)
+      if (titleTimer.current) clearTimeout(titleTimer.current)
+      titleTimer.current = setTimeout(() => setTitleSecret(false), 6000)
     }
   }
 
@@ -125,10 +130,10 @@ export function HomeScreen({ onSelectCategory }: { onSelectCategory: (c: Categor
       <FloatingSymbols onDiscover={reveal} />
       <header className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <motion.button type="button" onClick={pokeTitle} aria-label="元素タイピング。5回押すと何かが起こります" className={`relative cursor-pointer text-left text-4xl font-black tracking-tight sm:text-5xl ${titleSecret ? "text-rainbow" : ""}`} whileTap={{ scale: 0.97 }}>
+          <motion.button type="button" onClick={pokeTitle} aria-label="元素タイピング。5回押すと何かが起こります" className="relative cursor-pointer text-left text-4xl font-black tracking-tight sm:text-5xl" whileTap={{ scale: 0.97 }}>
             {titleSecret && <Confetti seed={effectSeed} />}
             {["元", "素", "タ", "イ", "ピ", "ン", "グ"].map((ch, i) => (
-              <motion.span key={i} initial={{ opacity: 0, y: 26, rotate: -10, scale: 0.6 }} animate={{ opacity: 1, y: 0, rotate: 0, scale: 1 }} transition={{ delay: 0.08 + i * 0.06, type: "spring", stiffness: 420, damping: 15 }} whileHover={{ y: -8, rotate: i % 2 === 0 ? 8 : -8, scale: 1.15, transition: { duration: 0.08, ease: "easeOut" } }} className={`inline-block will-change-transform ${!titleSecret && i < 2 ? "text-primary" : ""}`}>{ch}</motion.span>
+              <motion.span key={i} initial={{ opacity: 0, y: 26, rotate: -10, scale: 0.6 }} animate={{ opacity: 1, y: 0, rotate: 0, scale: 1 }} transition={{ delay: 0.08 + i * 0.06, type: "spring", stiffness: 420, damping: 15 }} whileHover={{ y: -8, rotate: i % 2 === 0 ? 8 : -8, scale: 1.15, transition: { duration: 0.08, ease: "easeOut" } }} className={`inline-block will-change-transform ${titleSecret ? "title-secret-letter" : i < 2 ? "text-primary" : ""}`} style={titleSecret ? { animationDelay: `${i * 90}ms` } : undefined}>{ch}</motion.span>
             ))}
           </motion.button>
           <p className="mt-2 font-bold text-muted-foreground">元素記号・イオン式をタイピングでおぼえよう！</p>
@@ -144,17 +149,17 @@ export function HomeScreen({ onSelectCategory }: { onSelectCategory: (c: Categor
         )}
       </AnimatePresence>
 
-      <div className="mb-4 font-black text-foreground/80">モードをえらぶ</div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <motion.div layout transition={{ layout: { type: "spring", stiffness: 260, damping: 28 } }} className="mb-4 font-black text-foreground/80">モードをえらぶ</motion.div>
+      <motion.div layout transition={{ layout: { type: "spring", stiffness: 260, damping: 28 } }} className="grid gap-4 sm:grid-cols-2">
         {cards.map((c, i) => { const Icon = c.icon; return (
           <motion.button key={c.cat} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i, type: "spring", stiffness: 260, damping: 20 }} whileHover={{ y: -6, rotate: i === 0 ? -1 : 1 }} whileTap={{ scale: 0.97 }} onClick={() => onSelectCategory(c.cat)} className="group flex flex-col items-start gap-3 rounded-3xl bg-card p-6 text-left shadow-pop">
             <span className={`grid size-16 place-items-center rounded-2xl ${c.ring} text-primary-foreground`}><Icon className="size-9" /></span>
             <span className="text-2xl font-black">{CAT_LABEL[c.cat]}</span><span className="text-sm font-medium leading-relaxed text-muted-foreground">{c.desc}</span>
           </motion.button>
         )})}
-      </div>
+      </motion.div>
 
-      <section className="mt-10">
+      <motion.section layout transition={{ layout: { type: "spring", stiffness: 260, damping: 28 } }} className="mt-10">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="flex items-center gap-2 font-black text-foreground/80">
             <motion.button type="button" aria-label="トロフィーの隠し応援メッセージを見る" onClick={() => reveal(chooseDifferent(TROPHY_CHEERS, message))} whileHover={{ scale: 1.16, rotate: -8 }} whileTap={{ scale: 0.82, rotate: 12 }} className="relative grid size-8 cursor-pointer place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
@@ -167,7 +172,7 @@ export function HomeScreen({ onSelectCategory }: { onSelectCategory: (c: Categor
         {stats.length === 0 ? <div className="rounded-3xl border-2 border-dashed border-border bg-card/50 p-8 text-center font-bold text-muted-foreground">まだ記録がありません。プレイしてみよう！</div> : (
           <ul className="flex flex-col gap-2"><AnimatePresence initial={false}>{stats.map((s, i) => <motion.li key={s.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: Math.min(i * 0.03, 0.3) }} className="flex items-center justify-between gap-3 rounded-2xl bg-card p-3 pl-4 shadow-pop-sm"><div className="min-w-0"><div className="truncate font-black">{CAT_LABEL[s.category]}<span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">{DIR_LABEL[s.direction]}</span></div><div className="text-xs font-medium text-muted-foreground">{new Date(s.date).toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}{" ・ "}{RANGE_LABEL[getRange(s)]} ・ {s.count}問</div></div><div className="flex items-center gap-1 font-mono text-lg font-black tabular-nums text-primary"><Clock className="size-4 text-muted-foreground" />{formatTime(s.totalMs)}</div></motion.li>)}</AnimatePresence></ul>
         )}
-      </section>
+      </motion.section>
       <Mascot />
       <AnimatePresence>{showKey && <ApiKeyDialog onClose={() => setShowKey(false)} />}</AnimatePresence>
     </div>

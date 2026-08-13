@@ -164,6 +164,17 @@
   color: transparent;
   animation: rainbow-pan 1.6s linear infinite;
 }
+@keyframes title-secret-color {
+  0%, 100% { color: var(--primary); }
+  25% { color: var(--pop-pink); }
+  50% { color: var(--pop-orange); }
+  75% { color: var(--pop-teal); }
+}
+.title-secret-letter {
+  color: var(--primary);
+  text-shadow: 0 2px 0 var(--card);
+  animation: title-secret-color 1.4s ease-in-out infinite;
+}
 
 /* Small idle bob for playful icons/badges. */
 @keyframes pop-bob {
