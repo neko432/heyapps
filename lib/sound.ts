@@ -13,7 +13,7 @@ function getCtx(): AudioContext | null {
     if (!AC) return null
     ctx = new AC()
     master = ctx.createGain()
-    master.gain.value = 0.5
+    master.gain.value = 0.85
     master.connect(ctx.destination)
   }
   // Browsers start the context suspended until a user gesture.
@@ -45,6 +45,37 @@ function note(c: AudioContext, dest: AudioNode, o: NoteOpts) {
   osc.stop(startAt + dur + 0.03)
 }
 
+// Short burst of filtered white noise — the "clack" body of a mechanical key.
+// This is what makes the typing sound カタカタ instead of a musical beep.
+interface ClackOpts {
+  startAt: number
+  dur: number
+  peak: number
+  freq: number
+  q?: number
+  filter?: BiquadFilterType
+}
+
+function noiseClack(c: AudioContext, dest: AudioNode, o: ClackOpts) {
+  const { startAt, dur, peak, freq, q = 1, filter = "bandpass" } = o
+  const frames = Math.max(1, Math.floor(c.sampleRate * dur))
+  const buffer = c.createBuffer(1, frames, c.sampleRate)
+  const data = buffer.getChannelData(0)
+  for (let i = 0; i < frames; i++) data[i] = Math.random() * 2 - 1
+  const src = c.createBufferSource()
+  src.buffer = buffer
+  const bp = c.createBiquadFilter()
+  bp.type = filter
+  bp.frequency.value = freq
+  bp.Q.value = q
+  const g = c.createGain()
+  g.gain.setValueAtTime(peak, startAt)
+  g.gain.exponentialRampToValueAtTime(0.0001, startAt + dur)
+  src.connect(bp).connect(g).connect(dest)
+  src.start(startAt)
+  src.stop(startAt + dur + 0.02)
+}
+
 export const sound = {
   setEnabled(v: boolean) {
     enabled = v
@@ -57,13 +88,20 @@ export const sound = {
     getCtx()
   },
 
-  // Soft mechanical click for each accepted keystroke.
+  // Crisp mechanical keyboard clack for each accepted keystroke.
+  // Layered: a bright noise "click" + a short low "thock" body, both slightly
+  // randomised so rapid typing reads as カタカタカタカタ rather than one tone.
   key() {
     if (!enabled) return
     const c = getCtx()
     if (!c || !master) return
     const t = c.currentTime
-    note(c, master, { freq: 420 + Math.random() * 120, startAt: t, dur: 0.05, type: "triangle", peak: 0.09, slideTo: 240 })
+    // Bright top click.
+    noiseClack(c, master, { startAt: t, dur: 0.028, peak: 0.55, freq: 2600 + Math.random() * 1600, q: 0.7 })
+    // Body of the keypress landing.
+    noiseClack(c, master, { startAt: t, dur: 0.045, peak: 0.35, freq: 700 + Math.random() * 200, q: 1.4 })
+    // Low thock for weight.
+    note(c, master, { freq: 180 + Math.random() * 40, startAt: t, dur: 0.04, type: "square", peak: 0.16, slideTo: 90 })
   },
 
   // Happy little arpeggio when a question is cleared.
