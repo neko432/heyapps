@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { callGemini } from "@/lib/gemini"
 import {
   getApiKey,
@@ -11,7 +13,6 @@ import {
   type ChatSession,
 } from "@/lib/storage"
 import type { AnsweredItem } from "@/lib/types"
-import { PopButton } from "./pop-button"
 import { ApiKeyDialog } from "./api-key-dialog"
 
 interface Props {
@@ -215,13 +216,19 @@ export function AiChat({ answered, onClose }: Props) {
                 key={i}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`max-w-[85%] whitespace-pre-wrap rounded-2xl border-2 border-border px-4 py-2.5 text-sm font-medium leading-relaxed shadow-pop ${
+                className={`max-w-[85%] rounded-2xl border-2 border-border px-4 py-2.5 text-sm font-medium leading-relaxed shadow-pop ${
                   m.role === "user"
-                    ? "self-end bg-primary text-primary-foreground"
+                    ? "self-end whitespace-pre-wrap bg-primary text-primary-foreground"
                     : "self-start bg-card text-card-foreground"
                 }`}
               >
-                {m.content}
+                {m.role === "user" ? (
+                  m.content
+                ) : (
+                  <div className="markdown-body">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                  </div>
+                )}
               </motion.div>
             ))}
             {loading && (

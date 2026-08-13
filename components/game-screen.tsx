@@ -37,6 +37,14 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
   const [muted, setMuted] = useState(false)
   // Confetti-style bursts fired when a question is cleared.
   const [bursts, setBursts] = useState<number[]>([])
+  // Consecutive clean clears (no hint, no mistakes) drive the combo flourishes.
+  const [combo, setCombo] = useState(0)
+  const comboRef = useRef(0)
+  const wrongThisQRef = useRef(false)
+  // Milestone combo popup, e.g. "5コンボ！".
+  const [comboPop, setComboPop] = useState<{ id: number; n: number } | null>(null)
+  // Rare full-screen special celebration.
+  const [special, setSpecial] = useState<{ id: number; kind: SpecialKind } | null>(null)
 
   // Source of truth for typed input. Updated synchronously on every keystroke so
   // rapid typing can't drop characters to a stale React state value.
@@ -170,6 +178,7 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
       setTyped("")
       setHintLevel(0)
       setUsedHint(false)
+      wrongThisQRef.current = false
       qStartRef.current = performance.now()
     },
     [index, questions.length, config, onFinish],
@@ -178,6 +187,8 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
   const wrongTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const triggerWrong = useCallback(() => {
     setWrong(true)
+    // A mistake on the current question means the clear won't count as "clean".
+    wrongThisQRef.current = true
     sound.wrong()
     clearTimeout(wrongTimer.current)
     wrongTimer.current = setTimeout(() => setWrong(false), 300)
@@ -190,6 +201,47 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
     setBursts((b) => [...b, id])
     setTimeout(() => setBursts((b) => b.filter((x) => x !== id)), 800)
   }, [])
+
+  // Fire the rare full-screen special celebration.
+  const fireSpecial = useCallback(() => {
+    const kind = SPECIALS[Math.floor(Math.random() * SPECIALS.length)]
+    const id = performance.now()
+    setSpecial({ id, kind })
+    sound.special()
+    setTimeout(() => setSpecial((s) => (s && s.id === id ? null : s)), 1600)
+  }, [])
+
+  // Called whenever a question is cleared. Updates the combo streak and decides
+  // whether to play the normal burst, a milestone combo popup, or a rare
+  // full-screen special animation. Then advances to the next question.
+  const clearQuestion = useCallback(
+    (q: Question, hinted: boolean) => {
+      const clean = !hinted && !wrongThisQRef.current
+      const next = clean ? comboRef.current + 1 : 0
+      comboRef.current = next
+      setCombo(next)
+
+      // Rare special: 4% base, nudged up a little by the current streak, and
+      // guaranteed on every 10th clean combo. Otherwise a normal confetti pop.
+      const chance = 0.04 + Math.min(next, 12) * 0.008
+      const milestone10 = clean && next > 0 && next % 10 === 0
+      if (milestone10 || Math.random() < chance) {
+        fireSpecial()
+      } else {
+        celebrate()
+      }
+
+      // Smaller combo popup at 3, 5, and every 5 after that.
+      if (clean && (next === 3 || (next >= 5 && next % 5 === 0)) && !milestone10) {
+        const id = performance.now()
+        setComboPop({ id, n: next })
+        setTimeout(() => setComboPop((c) => (c && c.id === id ? null : c)), 1000)
+      }
+
+      advance(q, hinted)
+    },
+    [advance, celebrate, fireSpecial],
+  )
 
   // Commit a new typed value: update the ref (synchronous truth) + state (render).
   const commit = useCallback((value: string) => {
@@ -204,8 +256,7 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
       if (current.mode === "romaji" && current.reading) {
         const res = checkRomaji(current.reading, value)
         if (res === "match") {
-          celebrate()
-          return advance(current, usedHint)
+          return clearQuestion(current, usedHint)
         }
         if (res === "no") return triggerWrong()
         sound.key()
@@ -214,15 +265,14 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
         const target = (current.ascii ?? "").toLowerCase()
         const v = value.toLowerCase()
         if (v === target) {
-          celebrate()
-          return advance(current, usedHint)
+          return clearQuestion(current, usedHint)
         }
         if (!target.startsWith(v)) return triggerWrong()
         sound.key()
         commit(value)
       }
     },
-    [current, advance, triggerWrong, usedHint, commit, celebrate],
+    [current, triggerWrong, usedHint, commit, clearQuestion],
   )
 
   // Resolve the intended Latin character for a key event. Uses e.key normally
@@ -315,6 +365,24 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
           animate={{ width: `${progress}%` }}
           transition={{ type: "spring", stiffness: 120, damping: 20 }}
         />
+      </div>
+
+      {/* Combo streak badge */}
+      <div className="mt-3 flex h-7 items-center justify-center">
+        <AnimatePresence>
+          {combo >= 2 && (
+            <motion.div
+              key={combo}
+              initial={{ scale: 0.5, opacity: 0, y: 6 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.7, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 420, damping: 16 }}
+              className="inline-flex items-center gap-1 rounded-full border-2 border-border bg-pop-orange px-3 py-1 text-sm font-black text-white shadow-pop-sm"
+            >
+              🔥 {combo} コンボ
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Prompt */}
@@ -467,6 +535,25 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
         )}
       </AnimatePresence>
 
+      {/* Milestone combo popup */}
+      <AnimatePresence>
+        {comboPop && (
+          <div className="pointer-events-none absolute inset-0 z-20 flex items-start justify-center pt-32">
+            <div className="animate-combo-pop text-center">
+              <div className="text-5xl font-black text-pop-orange drop-shadow-sm sm:text-6xl">
+                {comboPop.n} コンボ！
+              </div>
+              <div className="mt-1 text-lg font-black text-primary">
+                {comboPop.n >= 15 ? "神ってる！" : comboPop.n >= 10 ? "すごすぎ！" : "その調子！"}
+              </div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Rare full-screen special celebration */}
+      <AnimatePresence>{special && <SpecialFx kind={special.kind} />}</AnimatePresence>
+
       {/* AI chat */}
       <AnimatePresence>{showChat && <AiChat answered={answered} onClose={() => setShowChat(false)} />}</AnimatePresence>
     </div>
@@ -508,6 +595,127 @@ function Burst() {
           />
         )
       })}
+    </>
+  )
+}
+
+// --- Rare special celebrations -------------------------------------------------
+
+type SpecialKind = "rainbow" | "gold" | "sparkle" | "rocket"
+const SPECIALS: SpecialKind[] = ["rainbow", "gold", "sparkle", "rocket"]
+
+const SPECIAL_META: Record<SpecialKind, { label: string; sub: string; emojis: string[] }> = {
+  rainbow: { label: "🌈 レインボー花火！", sub: "レア演出だ！", emojis: ["🌈", "🎆", "🎇", "✨"] },
+  gold: { label: "💰 ゴールドラッシュ！", sub: "大当たり！", emojis: ["🪙", "⭐", "💛", "🌟"] },
+  sparkle: { label: "✨ きらきらタイム！", sub: "まぶしい！", emojis: ["✨", "💫", "⭐", "🌟"] },
+  rocket: { label: "🚀 ロケットスタート！", sub: "ぐんぐん進もう！", emojis: ["🚀", "💨", "⭐", "✨"] },
+}
+
+function SpecialFx({ kind }: { kind: SpecialKind }) {
+  const meta = SPECIAL_META[kind]
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="pointer-events-none absolute inset-0 z-40 overflow-hidden"
+    >
+      {/* Soft flash to make the moment pop. */}
+      <motion.div
+        className="absolute inset-0 bg-primary/10"
+        initial={{ opacity: 0.6 }}
+        animate={{ opacity: 0 }}
+        transition={{ duration: 0.6 }}
+      />
+
+      {/* Particle layer, behaviour varies per kind. */}
+      {kind === "rocket" ? <RocketFx emojis={meta.emojis} /> : <ParticleFx kind={kind} emojis={meta.emojis} />}
+
+      {/* Centered label */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="animate-special-pop text-center">
+          <div className="text-4xl font-black text-primary drop-shadow-sm sm:text-6xl">{meta.label}</div>
+          <div className="mt-2 text-xl font-black text-pop-orange">{meta.sub}</div>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+// Sparkle/gold/rainbow particles. Rainbow bursts from the center; the others
+// rain down from the top of the screen.
+function ParticleFx({ kind, emojis }: { kind: SpecialKind; emojis: string[] }) {
+  const count = 26
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => {
+        const emoji = emojis[i % emojis.length]
+        const size = 20 + Math.random() * 26
+        if (kind === "rainbow") {
+          const angle = (i / count) * Math.PI * 2 + Math.random() * 0.3
+          const dist = 160 + Math.random() * 260
+          return (
+            <motion.span
+              key={i}
+              className="absolute left-1/2 top-1/2"
+              style={{ fontSize: size }}
+              initial={{ x: 0, y: 0, scale: 0, opacity: 1 }}
+              animate={{
+                x: Math.cos(angle) * dist,
+                y: Math.sin(angle) * dist,
+                scale: [0, 1.1, 0.8],
+                opacity: [1, 1, 0],
+                rotate: Math.random() * 360,
+              }}
+              transition={{ duration: 1.2, ease: "easeOut" }}
+            >
+              {emoji}
+            </motion.span>
+          )
+        }
+        const left = Math.random() * 100
+        const delay = Math.random() * 0.4
+        return (
+          <motion.span
+            key={i}
+            className="absolute -top-10"
+            style={{ left: `${left}%`, fontSize: size }}
+            initial={{ y: 0, opacity: 0, rotate: 0 }}
+            animate={{ y: "110vh", opacity: [0, 1, 1, 0], rotate: (Math.random() - 0.5) * 540 }}
+            transition={{ duration: 1.4, delay, ease: "easeIn" }}
+          >
+            {emoji}
+          </motion.span>
+        )
+      })}
+    </>
+  )
+}
+
+// A rocket zooming across the screen leaving a little trail of sparkles.
+function RocketFx({ emojis }: { emojis: string[] }) {
+  return (
+    <>
+      <motion.span
+        className="absolute bottom-10 left-0 text-6xl"
+        initial={{ x: "-20vw", y: 0, rotate: -20, opacity: 0 }}
+        animate={{ x: "120vw", y: "-40vh", rotate: -20, opacity: [0, 1, 1, 0] }}
+        transition={{ duration: 1.3, ease: "easeInOut" }}
+      >
+        🚀
+      </motion.span>
+      {Array.from({ length: 16 }).map((_, i) => (
+        <motion.span
+          key={i}
+          className="absolute bottom-10 left-0"
+          style={{ fontSize: 16 + Math.random() * 18 }}
+          initial={{ x: "-20vw", y: 0, opacity: 0 }}
+          animate={{ x: "120vw", y: "-40vh", opacity: [0, 1, 0] }}
+          transition={{ duration: 1.3, delay: 0.03 * i, ease: "easeInOut" }}
+        >
+          {emojis[(i % (emojis.length - 1)) + 1]}
+        </motion.span>
+      ))}
     </>
   )
 }

@@ -7,7 +7,10 @@ const MODEL = "gemini-flash-latest"
 const SYSTEM_PROMPT =
   "あなたは中学生に化学を教える、親しみやすくて元気な先生です。" +
   "元素記号やイオン式について、中学生にもわかるように、やさしく短めに日本語で説明してください。" +
-  "専門的すぎる話は避け、身近な例やおぼえ方のコツも交えてください。"
+  "専門的すぎる話は避け、身近な例やおぼえ方のコツも交えてください。" +
+  "回答は3〜5文くらいで簡潔にまとめてください。" +
+  "箇条書きを使うときは各行を「・」で始めてください。強調したい言葉は「」で囲み、" +
+  "アスタリスク（*）やシャープ（#）などの記号による装飾は使わないでください。"
 
 // Calls the Gemini REST API directly from the browser using the user's API key.
 export async function callGemini(apiKey: string, history: ChatMessage[]): Promise<string> {
@@ -26,7 +29,14 @@ export async function callGemini(apiKey: string, history: ChatMessage[]): Promis
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
       contents,
-      generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
+      generationConfig: {
+        temperature: 0.7,
+        // Room for a full answer. gemini-flash-latest is a "thinking" model, so
+        // we turn thinking OFF for this simple tutoring task — otherwise the
+        // reasoning tokens eat the budget and the visible reply gets cut off.
+        maxOutputTokens: 2048,
+        thinkingConfig: { thinkingBudget: 0 },
+      },
     }),
   })
 
@@ -48,6 +58,28 @@ export async function callGemini(apiKey: string, history: ChatMessage[]): Promis
   }
 
   const data = await res.json()
-  const text = data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("") ?? ""
-  return text.trim() || "うまく答えを生成できませんでした。もう一度試してみてください。"
+
+  // Safety block (rare for this kind of content) — surface a friendly note.
+  const blockReason = data?.promptFeedback?.blockReason
+  if (blockReason) {
+    throw new Error("その質問には答えられませんでした。ちがう聞き方で試してみてね。")
+  }
+
+  const candidate = data?.candidates?.[0]
+  // Only join real answer text — skip any "thought" parts just in case.
+  const text = (candidate?.content?.parts ?? [])
+    .filter((p: { text?: string; thought?: boolean }) => !p.thought)
+    .map((p: { text?: string }) => p.text ?? "")
+    .join("")
+    .trim()
+
+  if (!text) {
+    // No visible text usually means the answer was truncated or filtered.
+    if (candidate?.finishReason === "MAX_TOKENS") {
+      throw new Error("答えが長くなりすぎたみたい。もう少し具体的に質問してみてね。")
+    }
+    return "うまく答えを生成できませんでした。もう一度試してみてください。"
+  }
+
+  return text
 }

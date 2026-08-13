@@ -133,6 +133,28 @@ export const sound = {
     note(c, master, { freq: 740, startAt: t, dur: 0.12, type: "sine", peak: 0.13, slideTo: 980 })
   },
 
+  // Sparkly rising fanfare for the rare special-clear celebration.
+  special() {
+    if (!enabled) return
+    const c = getCtx()
+    if (!c || !master) return
+    const t = c.currentTime
+    const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5] // C5 E5 G5 C6 E6
+    notes.forEach((f, i) =>
+      note(c, master!, { freq: f, startAt: t + i * 0.07, dur: 0.22, type: "triangle", peak: 0.17 }),
+    )
+    // Shimmer on top.
+    for (let i = 0; i < 6; i++) {
+      note(c, master, {
+        freq: 1600 + Math.random() * 1400,
+        startAt: t + 0.1 + i * 0.05,
+        dur: 0.1,
+        type: "sine",
+        peak: 0.07,
+      })
+    }
+  },
+
   // Fanfare on the result screen.
   clear() {
     if (!enabled) return

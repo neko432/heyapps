@@ -139,3 +139,44 @@
 .animate-blink {
   animation: pop-blink 1s step-end infinite;
 }
+
+/* Rendered AI markdown inside chat bubbles — keep it tidy and on-brand. */
+.markdown-body > :first-child { margin-top: 0; }
+.markdown-body > :last-child { margin-bottom: 0; }
+.markdown-body p { margin: 0.5em 0; }
+.markdown-body strong { font-weight: 800; color: var(--primary); }
+.markdown-body ul,
+.markdown-body ol { margin: 0.5em 0; padding-left: 1.25em; }
+.markdown-body ul { list-style: disc; }
+.markdown-body ol { list-style: decimal; }
+.markdown-body li { margin: 0.2em 0; }
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 { font-weight: 900; margin: 0.6em 0 0.3em; font-size: 1.05em; }
+.markdown-body code {
+  background: var(--muted);
+  border-radius: 0.4em;
+  padding: 0.05em 0.35em;
+  font-size: 0.9em;
+}
+.markdown-body a { color: var(--primary); font-weight: 700; text-decoration: underline; }
+
+/* Rare special-clear celebration overlays. */
+@keyframes pop-special-pop {
+  0% { transform: scale(0.4) rotate(-8deg); opacity: 0; }
+  35% { transform: scale(1.15) rotate(3deg); opacity: 1; }
+  70% { transform: scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: scale(1.05); opacity: 0; }
+}
+.animate-special-pop {
+  animation: pop-special-pop 1.4s ease-out forwards;
+}
+
+@keyframes pop-combo-pop {
+  0% { transform: scale(0.3) translateY(6px); opacity: 0; }
+  40% { transform: scale(1.15) translateY(0); opacity: 1; }
+  100% { transform: scale(0.9) translateY(-14px); opacity: 0; }
+}
+.animate-combo-pop {
+  animation: pop-combo-pop 1s ease-out forwards;
+}
