@@ -215,13 +215,13 @@ export function AiChat({ answered, onClose }: Props) {
                 key={i}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`max-w-[85%] whitespace-pre-wrap rounded-2xl border-2 border-border px-4 py-2.5 text-sm font-medium leading-relaxed shadow-pop ${
+                className={`max-w-[85%] rounded-2xl border-2 border-border px-4 py-2.5 text-sm font-medium leading-relaxed shadow-pop ${
                   m.role === "user"
-                    ? "self-end bg-primary text-primary-foreground"
+                    ? "self-end whitespace-pre-wrap bg-primary text-primary-foreground"
                     : "self-start bg-card text-card-foreground"
                 }`}
               >
-                {m.content}
+                {m.role === "user" ? m.content : <RichText text={m.content} />}
               </motion.div>
             ))}
             {loading && (
@@ -302,4 +302,94 @@ export function AiChat({ answered, onClose }: Props) {
       {showKeyDialog && <ApiKeyDialog onClose={() => setShowKeyDialog(false)} />}
     </motion.div>
   )
+}
+
+// Renders the assistant's lightly-formatted reply. The model sometimes emits
+// Markdown (**bold**, bullet lists, headings) and stray double spaces; showing
+// that raw looked broken, so we parse the common bits and tidy the whitespace.
+function RichText({ text }: { text: string }) {
+  const cleaned = text
+    .replace(/\r/g, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+
+  const lines = cleaned.split("\n")
+  const blocks: React.ReactNode[] = []
+  let bullets: string[] = []
+
+  const flush = () => {
+    if (!bullets.length) return
+    const items = bullets
+    bullets = []
+    blocks.push(
+      <ul key={`ul-${blocks.length}`} className="my-1 flex flex-col gap-1">
+        {items.map((li, i) => (
+          <li key={i} className="flex gap-2">
+            <span className="mt-[0.1em] text-primary">●</span>
+            <span>{inline(li)}</span>
+          </li>
+        ))}
+      </ul>,
+    )
+  }
+
+  lines.forEach((raw, idx) => {
+    const line = raw.trim()
+    const bullet = line.match(/^[-*・•]\s+(.*)$/)
+    const heading = line.match(/^#{1,4}\s+(.*)$/)
+    if (bullet) {
+      bullets.push(bullet[1])
+      return
+    }
+    flush()
+    if (heading) {
+      blocks.push(
+        <p key={idx} className="mt-1 text-base font-black text-foreground">
+          {inline(heading[1])}
+        </p>,
+      )
+    } else if (line === "") {
+      blocks.push(<div key={idx} className="h-2" />)
+    } else {
+      blocks.push(<p key={idx}>{inline(line)}</p>)
+    }
+  })
+  flush()
+
+  return <div className="flex flex-col">{blocks}</div>
+}
+
+// Parses inline **bold**, *emphasis* and `code` within a single line.
+function inline(text: string): React.ReactNode[] {
+  const nodes: React.ReactNode[] = []
+  const regex = /\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`/g
+  let last = 0
+  let key = 0
+  let m: RegExpExecArray | null
+  while ((m = regex.exec(text)) !== null) {
+    if (m.index > last) nodes.push(text.slice(last, m.index))
+    if (m[1] != null) {
+      nodes.push(
+        <strong key={key++} className="font-black text-foreground">
+          {m[1]}
+        </strong>,
+      )
+    } else if (m[2] != null) {
+      nodes.push(
+        <span key={key++} className="font-bold text-primary">
+          {m[2]}
+        </span>,
+      )
+    } else if (m[3] != null) {
+      nodes.push(
+        <code key={key++} className="rounded bg-muted px-1 py-0.5 font-mono text-[0.85em]">
+          {m[3]}
+        </code>,
+      )
+    }
+    last = regex.lastIndex
+  }
+  if (last < text.length) nodes.push(text.slice(last))
+  return nodes
 }

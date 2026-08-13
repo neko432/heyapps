@@ -11,6 +11,7 @@ import { sound } from "@/lib/sound"
 import { getSoundEnabled, setSoundEnabled } from "@/lib/storage"
 import { PopButton } from "./pop-button"
 import { AiChat } from "./ai-chat"
+import { Burst, PraisePop, ComboBadge, SpecialCelebration } from "./game-fx"
 
 interface Props {
   config: GameConfig
@@ -37,6 +38,13 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
   const [muted, setMuted] = useState(false)
   // Confetti-style bursts fired when a question is cleared.
   const [bursts, setBursts] = useState<number[]>([])
+  // Streak of consecutive correct answers (drives the combo badge + praise).
+  const [combo, setCombo] = useState(0)
+  const comboRef = useRef(0)
+  // The bubbly praise word currently floating above the card.
+  const [praise, setPraise] = useState<{ id: number; text: string; tone: string } | null>(null)
+  // Set to a fresh id whenever the rare special celebration fires.
+  const [special, setSpecial] = useState<number | null>(null)
 
   // Source of truth for typed input. Updated synchronously on every keystroke so
   // rapid typing can't drop characters to a stale React state value.
@@ -179,16 +187,45 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
   const triggerWrong = useCallback(() => {
     setWrong(true)
     sound.wrong()
+    // A miss breaks the streak.
+    comboRef.current = 0
+    setCombo(0)
     clearTimeout(wrongTimer.current)
     wrongTimer.current = setTimeout(() => setWrong(false), 300)
   }, [])
 
-  // Play the clear sound and fire a short confetti burst over the card.
+  // Fire everything that makes a cleared question feel good: sound, confetti,
+  // a bubbly praise word, the combo counter, and — rarely — a big special show.
+  const praiseTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const specialTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const celebrate = useCallback(() => {
     sound.correct()
     const id = performance.now()
     setBursts((b) => [...b, id])
     setTimeout(() => setBursts((b) => b.filter((x) => x !== id)), 800)
+
+    // Grow the combo streak.
+    const streak = comboRef.current + 1
+    comboRef.current = streak
+    setCombo(streak)
+    if (streak >= 3) sound.combo(streak)
+
+    // Pick a praise word — the higher the streak, the more hyped it gets.
+    const pool = streak >= 7 ? PRAISE_HOT : streak >= 3 ? PRAISE_MID : PRAISE_BASE
+    const text = pool[Math.floor(Math.random() * pool.length)]
+    const tone = PRAISE_TONES[Math.floor(Math.random() * PRAISE_TONES.length)]
+    setPraise({ id, text, tone })
+    clearTimeout(praiseTimer.current)
+    praiseTimer.current = setTimeout(() => setPraise(null), 950)
+
+    // Rare "special" moment: every 10th combo, or a small random chance.
+    const isMilestone = streak > 0 && streak % 10 === 0
+    if (isMilestone || Math.random() < 0.06) {
+      sound.special()
+      setSpecial(id)
+      clearTimeout(specialTimer.current)
+      specialTimer.current = setTimeout(() => setSpecial(null), 1800)
+    }
   }, [])
 
   // Commit a new typed value: update the ref (synchronous truth) + state (render).
@@ -224,6 +261,15 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
     },
     [current, advance, triggerWrong, usedHint, commit, celebrate],
   )
+
+  // Clear any pending effect timers when leaving the game screen.
+  useEffect(() => {
+    return () => {
+      clearTimeout(wrongTimer.current)
+      clearTimeout(praiseTimer.current)
+      clearTimeout(specialTimer.current)
+    }
+  }, [])
 
   // Resolve the intended Latin character for a key event. Uses e.key normally
   // (respects the keyboard layout), but falls back to the physical e.code when a
@@ -324,7 +370,14 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
           {bursts.map((id) => (
             <Burst key={id} />
           ))}
+          <AnimatePresence>
+            {praise && <PraisePop key={praise.id} text={praise.text} tone={praise.tone} />}
+          </AnimatePresence>
         </div>
+
+        {/* Combo streak counter. */}
+        <AnimatePresence>{combo >= 3 && <ComboBadge combo={combo} />}</AnimatePresence>
+
         <p className="mb-4 text-center text-base font-bold text-muted-foreground">{current.promptLabel}</p>
         <AnimatePresence mode="popLayout">
           <motion.div
@@ -469,45 +522,21 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
 
       {/* AI chat */}
       <AnimatePresence>{showChat && <AiChat answered={answered} onClose={() => setShowChat(false)} />}</AnimatePresence>
+
+      {/* Rare full-screen special celebration. */}
+      <AnimatePresence>{special != null && <SpecialCelebration key={special} seed={special} />}</AnimatePresence>
     </div>
   )
 }
 
-// A quick radial confetti pop of colored dots for a cleared question.
-const BURST_COLORS = [
+// Praise words, tiered by how hot the current combo streak is.
+const PRAISE_BASE = ["せいかい!", "ナイス!", "いいね!", "OK!", "ばっちり!"]
+const PRAISE_MID = ["すごい!", "その調子!", "いいぞ!", "ナイス!", "さすが!"]
+const PRAISE_HOT = ["絶好調!", "天才!", "無敵!", "スゴすぎ!", "神ってる!"]
+const PRAISE_TONES = [
   "var(--pop-pink)",
-  "var(--pop-yellow)",
   "var(--pop-teal)",
   "var(--pop-blue)",
   "var(--pop-orange)",
   "var(--primary)",
 ]
-
-function Burst() {
-  const count = 12
-  return (
-    <>
-      {Array.from({ length: count }).map((_, i) => {
-        const angle = (i / count) * Math.PI * 2 + Math.random() * 0.4
-        const dist = 80 + Math.random() * 70
-        const size = 8 + Math.random() * 8
-        return (
-          <motion.span
-            key={i}
-            initial={{ x: 0, y: 0, scale: 0, opacity: 1 }}
-            animate={{
-              x: Math.cos(angle) * dist,
-              y: Math.sin(angle) * dist,
-              scale: [0, 1, 0.5],
-              opacity: [1, 1, 0],
-              rotate: Math.random() * 180,
-            }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
-            className="absolute rounded-[3px]"
-            style={{ width: size, height: size, backgroundColor: BURST_COLORS[i % BURST_COLORS.length] }}
-          />
-        )
-      })}
-    </>
-  )
-}

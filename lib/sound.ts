@@ -142,4 +142,31 @@ export const sound = {
     const notes = [523.25, 659.25, 783.99, 1046.5] // C5 E5 G5 C6
     notes.forEach((f, i) => note(c, master!, { freq: f, startAt: t + i * 0.11, dur: 0.28, type: "triangle", peak: 0.18 }))
   },
+
+  // Rising sparkle for a growing combo — pitch climbs with the streak.
+  combo(step: number) {
+    if (!enabled) return
+    const c = getCtx()
+    if (!c || !master) return
+    const t = c.currentTime
+    const freq = 660 * Math.pow(2, Math.min(step, 12) / 12)
+    note(c, master, { freq, startAt: t, dur: 0.12, type: "triangle", peak: 0.16, slideTo: freq * 1.5 })
+  },
+
+  // Big shimmering fanfare for the rare special celebration.
+  special() {
+    if (!enabled) return
+    const c = getCtx()
+    if (!c || !master) return
+    const t = c.currentTime
+    const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5] // C5 E5 G5 C6 E6
+    notes.forEach((f, i) => {
+      note(c, master!, { freq: f, startAt: t + i * 0.07, dur: 0.4, type: "triangle", peak: 0.2 })
+      note(c, master!, { freq: f * 2, startAt: t + i * 0.07, dur: 0.4, type: "sine", peak: 0.08 })
+    })
+    // Sparkle tail.
+    for (let i = 0; i < 6; i++) {
+      note(c, master, { freq: 1600 + Math.random() * 1200, startAt: t + 0.4 + i * 0.05, dur: 0.16, type: "sine", peak: 0.08 })
+    }
+  },
 }
