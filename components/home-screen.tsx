@@ -138,8 +138,8 @@ export function HomeScreen({ onSelectCategory }: { onSelectCategory: (c: Categor
 
       <AnimatePresence mode="wait">
         {message && (
-          <motion.div key={message} role="status" initial={{ opacity: 0, y: -12, scale: 0.88 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6, scale: 0.95 }} transition={{ type: "spring", stiffness: 520, damping: 24 }} className="secret-message relative mb-5 flex items-center gap-3 rounded-2xl border-2 border-primary/20 bg-card px-4 py-3 font-bold shadow-pop-sm">
-            <Sparkles className="size-5 shrink-0 text-pop-orange" /> <span className="text-pretty">{message}</span><Confetti seed={effectSeed} />
+          <motion.div key={message} role="status" initial={{ opacity: 0, y: -10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.98 }} transition={{ type: "spring", stiffness: 420, damping: 28 }} className="secret-message relative mb-5 flex items-start gap-3 rounded-2xl border-2 border-primary/25 bg-card px-5 py-4 font-sans text-base font-bold leading-relaxed text-foreground shadow-pop-sm sm:text-lg">
+            <Sparkles className="mt-0.5 size-5 shrink-0 text-pop-orange" /> <span className="min-w-0 text-pretty">{message}</span><Confetti seed={effectSeed} />
           </motion.div>
         )}
       </AnimatePresence>
