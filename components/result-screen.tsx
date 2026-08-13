@@ -31,7 +31,7 @@ export function ResultScreen({ result, achievement, onRetry, onHome }: Props) {
   const avgMs = result.totalMs / result.results.length
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-2xl flex-col items-center px-5 py-8">
+    <div className="mx-auto flex min-h-dvh w-full max-w-5xl flex-col items-center px-5 py-8 md:px-8 xl:px-10">
       {/* New personal best gets a celebratory confetti rain. */}
       {isNewBest && <ConfettiRain seed={Math.floor(result.totalMs)} />}
       <motion.div
