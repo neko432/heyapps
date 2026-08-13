@@ -67,6 +67,7 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
   const typedRef = useRef("")
 
   const results = useRef<QuestionResult[]>([])
+  const finishedRef = useRef(false)
   const mistakeCountRef = useRef(0)
   const startRef = useRef<number>(performance.now())
   const qStartRef = useRef<number>(performance.now())
@@ -185,6 +186,9 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
 
   const advance = useCallback(
     (q: Question, hinted: boolean) => {
+      if (finishedRef.current) return
+      const isLast = index + 1 >= questions.length
+      if (isLast) finishedRef.current = true
       results.current.push({
         id: q.id,
         prompt: q.prompt,
@@ -197,7 +201,7 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
         ...prev,
         { prompt: q.prompt, answerDisplay: q.answerDisplay, usedHint: hinted, category: config.category },
       ])
-      if (index + 1 >= questions.length) {
+      if (isLast) {
         const rs = results.current
         let slowest = rs[0]
         for (const r of rs) if (r.ms > slowest.ms) slowest = r

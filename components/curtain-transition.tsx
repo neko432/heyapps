@@ -1,75 +1,68 @@
 "use client"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 
-// -------------------------------------------------------------------------
-// yui540-inspired screen transition.
-// When `transitionKey` changes, staggered colored panels sweep down and
-// cover the screen, the content swaps while hidden, then the panels
-// retract upward to reveal the new screen. First paint shows the content
-// immediately (no opening curtain).
-// -------------------------------------------------------------------------
+const TILES = [
+  { symbol: "H", name: "水素", className: "reaction-tile-h" },
+  { symbol: "O", name: "酸素", className: "reaction-tile-o" },
+  { symbol: "Na", name: "ナトリウム", className: "reaction-tile-na" },
+  { symbol: "Cl", name: "塩素", className: "reaction-tile-cl" },
+  { symbol: "C", name: "炭素", className: "reaction-tile-c" },
+  { symbol: "Fe", name: "鉄", className: "reaction-tile-fe" },
+]
 
-const PANEL_COLORS = ["var(--pop-pink)", "var(--pop-yellow)", "var(--pop-teal)", "var(--primary)"]
-const STAGGER_MS = 70
-const PANEL_MS = 380
-// Time until the last panel finishes covering the screen.
-const COVER_TOTAL = PANEL_MS + STAGGER_MS * (PANEL_COLORS.length - 1)
+const COVER_MS = 520
+const REVEAL_MS = 620
 
 type Phase = "idle" | "cover" | "reveal"
 
-export function CurtainTransition({
-  transitionKey,
-  children,
-}: {
-  transitionKey: string
-  children: ReactNode
-}) {
+export function CurtainTransition({ transitionKey, children }: { transitionKey: string; children: ReactNode }) {
   const [shown, setShown] = useState(() => ({ key: transitionKey, node: children }))
-  // Start in "idle" — no curtain on first load, only between screens.
   const [phase, setPhase] = useState<Phase>("idle")
+  const running = useRef(false)
 
   useEffect(() => {
-    // Same screen: just keep the rendered children fresh (state updates etc).
-    if (transitionKey === shown.key) {
-      setShown((s) => (s.node === children ? s : { ...s, node: children }))
-      return
-    }
+    if (transitionKey === shown.key) return
+    if (running.current) return
 
-    // New screen: cover, swap while hidden, then reveal.
+    running.current = true
     setPhase("cover")
-    const swap = setTimeout(() => {
+    const swap = window.setTimeout(() => {
       window.scrollTo(0, 0)
       setShown({ key: transitionKey, node: children })
       setPhase("reveal")
-    }, COVER_TOTAL)
-    const done = setTimeout(() => setPhase("idle"), COVER_TOTAL * 2 + 80)
+    }, COVER_MS)
+    const done = window.setTimeout(() => {
+      setPhase("idle")
+      running.current = false
+    }, COVER_MS + REVEAL_MS)
+
     return () => {
-      clearTimeout(swap)
-      clearTimeout(done)
+      window.clearTimeout(swap)
+      window.clearTimeout(done)
+      running.current = false
     }
   }, [transitionKey, children, shown.key])
 
-  // Clear the initial reveal once it finishes.
-  useEffect(() => {
-    if (phase !== "reveal") return
-    const t = setTimeout(() => setPhase("idle"), COVER_TOTAL + 80)
-    return () => clearTimeout(t)
-  }, [phase])
-
   return (
     <>
-      {/* Block clicks mid-transition so nobody double-navigates. */}
-      <div className={phase === "cover" ? "pointer-events-none" : undefined}>{shown.node}</div>
-
+      <div className={phase === "idle" ? undefined : "pointer-events-none"}>{shown.node}</div>
       {phase !== "idle" && (
-        <div aria-hidden className="pointer-events-none fixed inset-0 z-[70] flex">
-          {PANEL_COLORS.map((color, i) => (
-            <div
-              key={`${phase}-${i}`}
-              className={`h-full flex-1 ${phase === "cover" ? "curtain-panel-in" : "curtain-panel-out"}`}
-              style={{ backgroundColor: color, animationDelay: `${i * STAGGER_MS}ms` }}
-            />
+        <div aria-hidden className={`reaction-transition reaction-${phase}`}>
+          <div className="reaction-backdrop" />
+          <div className="reaction-ring">
+            <span />
+            <span />
+          </div>
+          <div className="reaction-spark reaction-spark-one" />
+          <div className="reaction-spark reaction-spark-two" />
+          <div className="reaction-spark reaction-spark-three" />
+          <p className="reaction-label">CHEMICAL REACTION</p>
+          {TILES.map((tile) => (
+            <div key={tile.symbol} className={`reaction-tile ${tile.className}`}>
+              <strong>{tile.symbol}</strong>
+              <small>{tile.name}</small>
+            </div>
           ))}
         </div>
       )}

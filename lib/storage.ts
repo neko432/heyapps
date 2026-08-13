@@ -63,12 +63,27 @@ function write(key: string, value: unknown) {
 }
 
 // ---- Stats ----
+function samePlay(a: PlayStat, b: PlayStat) {
+  return (
+    a.category === b.category &&
+    a.direction === b.direction &&
+    a.count === b.count &&
+    getRange(a) === getRange(b) &&
+    Math.abs(a.totalMs - b.totalMs) < 50 &&
+    Math.abs(a.date - b.date) < 2_000
+  )
+}
+
 export function getStats(): PlayStat[] {
-  return read<PlayStat[]>(STATS_KEY, []).sort((a, b) => b.date - a.date)
+  const stored = read<PlayStat[]>(STATS_KEY, []).sort((a, b) => b.date - a.date)
+  const unique = stored.filter((stat, index, all) => !all.slice(0, index).some((saved) => saved.id === stat.id || samePlay(saved, stat)))
+  if (unique.length !== stored.length) write(STATS_KEY, unique)
+  return unique
 }
 
 export function addStat(stat: PlayStat) {
   const stats = read<PlayStat[]>(STATS_KEY, [])
+  if (stats.some((saved) => saved.id === stat.id || samePlay(saved, stat))) return
   stats.push(stat)
   write(STATS_KEY, stats.slice(-100))
 }
