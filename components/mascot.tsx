@@ -63,13 +63,14 @@ export function Mascot() {
 
   return (
     <div className="pointer-events-none fixed bottom-5 right-5 z-30 flex flex-col items-end gap-2">
-      {/* Speech bubble */}
-      <AnimatePresence mode="wait">
+      {/* Speech bubble — popLayout so the new message springs in instantly
+          instead of waiting for the old one's exit animation. */}
+      <AnimatePresence mode="popLayout">
         <motion.div
           key={bubble}
           initial={{ opacity: 0, y: 6, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -4, scale: 0.95 }}
+          exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.08 } }}
           transition={{ type: "spring", stiffness: 480, damping: 24 }}
           className="pointer-events-none relative max-w-52 rounded-2xl border-2 border-border bg-card px-3 py-2 text-xs font-bold leading-relaxed text-foreground shadow-pop-sm"
         >
@@ -112,8 +113,8 @@ export function Mascot() {
           <span className="absolute -top-1 left-1/2 size-2.5 -translate-x-1/2 rounded-full bg-pop-pink" />
         </span>
 
-        {/* Face */}
-        <span className="relative grid size-13 place-items-center rounded-full bg-pop-teal shadow-pop-sm">
+        {/* Face — gentle idle bob so Atom-chan feels alive between pokes. */}
+        <span className="animate-mascot-idle relative grid size-13 place-items-center rounded-full bg-pop-teal shadow-pop-sm">
           <span className="flex items-center gap-2">
             <span className="mascot-eye" />
             <span className="mascot-eye" />

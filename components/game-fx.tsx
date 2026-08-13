@@ -98,6 +98,41 @@ export function ComboBadge({ combo }: { combo: number }) {
 }
 
 // -------------------------------------------------------------------------
+// Confetti rain — colored ribbons falling from the top of the screen.
+// Used on the result screen when the player sets a new personal best.
+// -------------------------------------------------------------------------
+export function ConfettiRain({ seed = 1 }: { seed?: number }) {
+  const pieces = useMemo(() => {
+    const rand = mulberry32(seed)
+    return Array.from({ length: 36 }).map(() => ({
+      left: rand() * 100,
+      delay: rand() * 0.9,
+      dur: 1.6 + rand() * 1.4,
+      w: 8 + rand() * 6,
+      h: 12 + rand() * 10,
+      color: POP[Math.floor(rand() * POP.length)],
+      drift: (rand() - 0.5) * 120,
+      spin: (rand() - 0.5) * 900,
+    }))
+  }, [seed])
+
+  return (
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-40 overflow-hidden">
+      {pieces.map((p, i) => (
+        <motion.span
+          key={i}
+          initial={{ y: "-8vh", x: 0, rotate: 0, opacity: 1 }}
+          animate={{ y: "110vh", x: p.drift, rotate: p.spin, opacity: [1, 1, 0.9] }}
+          transition={{ duration: p.dur, delay: p.delay, ease: "easeIn" }}
+          className="absolute top-0 rounded-[2px]"
+          style={{ left: `${p.left}%`, width: p.w, height: p.h, backgroundColor: p.color }}
+        />
+      ))}
+    </div>
+  )
+}
+
+// -------------------------------------------------------------------------
 // Special celebration — the rare, full-screen "wow" moment.
 // -------------------------------------------------------------------------
 const SPECIAL_WORDS = ["パーフェクト!", "ミラクル!", "スーパー!", "でんせつ!", "かんぺき!", "ゴッド!"]

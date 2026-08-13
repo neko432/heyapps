@@ -7,6 +7,7 @@ import type { GameResult } from "@/lib/types"
 import { getStats } from "@/lib/storage"
 import { sound } from "@/lib/sound"
 import { PopButton } from "./pop-button"
+import { ConfettiRain } from "./game-fx"
 
 interface Props {
   result: GameResult
@@ -40,6 +41,8 @@ export function ResultScreen({ result, onRetry, onHome }: Props) {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col items-center px-5 py-8">
+      {/* New personal best gets a celebratory confetti rain. */}
+      {isNewBest && <ConfettiRain seed={Math.floor(result.totalMs)} />}
       <motion.div
         initial={{ scale: 0.6, opacity: 0, rotate: -6 }}
         animate={{ scale: 1, opacity: 1, rotate: 0 }}

@@ -72,7 +72,7 @@ export function HomeScreen({ onSelectCategory }: { onSelectCategory: (c: Categor
                 key={i}
                 initial={{ opacity: 0, y: 26, rotate: -10, scale: 0.6 }}
                 animate={{ opacity: 1, y: 0, rotate: 0, scale: 1 }}
-                transition={{ delay: 0.35 + i * 0.06, type: "spring", stiffness: 420, damping: 15 }}
+                transition={{ delay: 0.08 + i * 0.06, type: "spring", stiffness: 420, damping: 15 }}
                 whileHover={{ y: -8, rotate: i % 2 === 0 ? 8 : -8, scale: 1.15 }}
                 className={`inline-block ${i < 2 ? "text-primary" : ""}`}
               >
