@@ -141,6 +141,7 @@ export const ELEMENTS: ElementItem[] = [
 // Middle-school level ions.
 export const IONS: IonItem[] = [
   { formula: "H⁺", ascii: "h+", name: "水素イオン", reading: "すいそいおん" },
+  { formula: "Li⁺", ascii: "li+", name: "リチウムイオン", reading: "りちうむいおん" },
   { formula: "Na⁺", ascii: "na+", name: "ナトリウムイオン", reading: "なとりうむいおん" },
   { formula: "K⁺", ascii: "k+", name: "カリウムイオン", reading: "かりうむいおん" },
   { formula: "Ag⁺", ascii: "ag+", name: "銀イオン", reading: "ぎんいおん" },
@@ -153,13 +154,17 @@ export const IONS: IonItem[] = [
   { formula: "Fe³⁺", ascii: "fe3+", name: "鉄(III)イオン", reading: "てついおん" },
   { formula: "Al³⁺", ascii: "al3+", name: "アルミニウムイオン", reading: "あるみにうむいおん" },
   { formula: "NH₄⁺", ascii: "nh4+", name: "アンモニウムイオン", reading: "あんもにうむいおん" },
+  { formula: "F⁻", ascii: "f-", name: "フッ化物イオン", reading: "ふっかぶついおん" },
   { formula: "Cl⁻", ascii: "cl-", name: "塩化物イオン", reading: "えんかぶついおん" },
+  { formula: "Br⁻", ascii: "br-", name: "臭化物イオン", reading: "しゅうかぶついおん" },
+  { formula: "I⁻", ascii: "i-", name: "ヨウ化物イオン", reading: "ようかぶついおん" },
   { formula: "OH⁻", ascii: "oh-", name: "水酸化物イオン", reading: "すいさんかぶついおん" },
   { formula: "NO₃⁻", ascii: "no3-", name: "硝酸イオン", reading: "しょうさんいおん" },
   { formula: "O²⁻", ascii: "o2-", name: "酸化物イオン", reading: "さんかぶついおん" },
   { formula: "S²⁻", ascii: "s2-", name: "硫化物イオン", reading: "りゅうかぶついおん" },
   { formula: "SO₄²⁻", ascii: "so42-", name: "硫酸イオン", reading: "りゅうさんいおん" },
   { formula: "CO₃²⁻", ascii: "co32-", name: "炭酸イオン", reading: "たんさんいおん" },
+  { formula: "HCO₃⁻", ascii: "hco3-", name: "炭酸水素イオン", reading: "たんさんすいそいおん" },
 ]
 
 export interface Question {

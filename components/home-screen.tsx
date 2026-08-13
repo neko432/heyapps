@@ -18,6 +18,34 @@ const CAT_LABEL: Record<Category, string> = {
   ion: "イオン式",
 }
 
+// Faint chemistry symbols drifting behind the home content — purely thematic.
+const FLOATING: { t: string; top: string; left: string; size: string; delay: string }[] = [
+  { t: "H", top: "10%", left: "5%", size: "text-6xl", delay: "0s" },
+  { t: "O²⁻", top: "16%", left: "80%", size: "text-4xl", delay: "0.7s" },
+  { t: "Na⁺", top: "66%", left: "8%", size: "text-5xl", delay: "1.3s" },
+  { t: "Fe", top: "80%", left: "82%", size: "text-6xl", delay: "0.4s" },
+  { t: "Cl⁻", top: "40%", left: "91%", size: "text-3xl", delay: "1s" },
+  { t: "Mg²⁺", top: "52%", left: "2%", size: "text-3xl", delay: "1.7s" },
+  { t: "He", top: "88%", left: "38%", size: "text-4xl", delay: "0.5s" },
+  { t: "Ca²⁺", top: "30%", left: "48%", size: "text-3xl", delay: "1.1s" },
+]
+
+function FloatingSymbols() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      {FLOATING.map((f, i) => (
+        <span
+          key={i}
+          className={`animate-pop-float absolute font-black ${f.size} ${i % 2 === 0 ? "text-primary" : "text-pop-teal"}`}
+          style={{ top: f.top, left: f.left, animationDelay: f.delay, opacity: 0.1 }}
+        >
+          {f.t}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 export function HomeScreen({ onSelectCategory }: { onSelectCategory: (c: Category) => void }) {
   const [stats, setStats] = useState<PlayStat[]>([])
   const [showKey, setShowKey] = useState(false)
@@ -33,6 +61,7 @@ export function HomeScreen({ onSelectCategory }: { onSelectCategory: (c: Categor
 
   return (
     <div className="relative mx-auto flex min-h-svh w-full max-w-3xl flex-col px-5 py-8">
+      <FloatingSymbols />
       <header className="mb-8 flex items-start justify-between">
         <div>
           <motion.h1

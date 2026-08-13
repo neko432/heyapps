@@ -32,9 +32,11 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
   const [showChat, setShowChat] = useState(false)
   const [showQuitConfirm, setShowQuitConfirm] = useState(false)
   const [wrong, setWrong] = useState(false)
-  const [now, setNow] = useState(0)
+  const [now, setNow] = useState(() => (typeof performance !== "undefined" ? performance.now() : 0))
   const [answered, setAnswered] = useState<AnsweredItem[]>([])
   const [muted, setMuted] = useState(false)
+  // Confetti-style bursts fired when a question is cleared.
+  const [bursts, setBursts] = useState<number[]>([])
 
   // Source of truth for typed input. Updated synchronously on every keystroke so
   // rapid typing can't drop characters to a stale React state value.
@@ -49,6 +51,16 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
 
   const current = questions[index]
   const overlayOpen = paused || showChat || showQuitConfirm
+
+  // How many answer characters the player has ALREADY typed correctly.
+  // Used to tint those hint tiles a different color so progress is obvious.
+  const completed = useMemo(() => {
+    if (!current) return 0
+    if (current.mode === "romaji" && current.reading) {
+      return completedReadingCount(current.reading, typed)
+    }
+    return typed.length
+  }, [current, typed])
 
   // Load the saved sound preference and unlock the audio context.
   useEffect(() => {
@@ -171,6 +183,14 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
     wrongTimer.current = setTimeout(() => setWrong(false), 300)
   }, [])
 
+  // Play the clear sound and fire a short confetti burst over the card.
+  const celebrate = useCallback(() => {
+    sound.correct()
+    const id = performance.now()
+    setBursts((b) => [...b, id])
+    setTimeout(() => setBursts((b) => b.filter((x) => x !== id)), 800)
+  }, [])
+
   // Commit a new typed value: update the ref (synchronous truth) + state (render).
   const commit = useCallback((value: string) => {
     typedRef.current = value
@@ -184,7 +204,7 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
       if (current.mode === "romaji" && current.reading) {
         const res = checkRomaji(current.reading, value)
         if (res === "match") {
-          sound.correct()
+          celebrate()
           return advance(current, usedHint)
         }
         if (res === "no") return triggerWrong()
@@ -194,7 +214,7 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
         const target = (current.ascii ?? "").toLowerCase()
         const v = value.toLowerCase()
         if (v === target) {
-          sound.correct()
+          celebrate()
           return advance(current, usedHint)
         }
         if (!target.startsWith(v)) return triggerWrong()
@@ -202,7 +222,7 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
         commit(value)
       }
     },
-    [current, advance, triggerWrong, usedHint, commit],
+    [current, advance, triggerWrong, usedHint, commit, celebrate],
   )
 
   // Resolve the intended Latin character for a key event. Uses e.key normally
@@ -298,7 +318,13 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
       </div>
 
       {/* Prompt */}
-      <div className="flex flex-1 flex-col items-center justify-center">
+      <div className="relative flex flex-1 flex-col items-center justify-center">
+        {/* Celebration confetti burst layer, centered on the card. */}
+        <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
+          {bursts.map((id) => (
+            <Burst key={id} />
+          ))}
+        </div>
         <p className="mb-4 text-center text-base font-bold text-muted-foreground">{current.promptLabel}</p>
         <AnimatePresence mode="popLayout">
           <motion.div
@@ -320,9 +346,9 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
         {/* Typed echo */}
         <div className="mt-6 flex min-h-[2.5rem] items-center justify-center">
           <span
-            className={`font-mono text-2xl font-bold tracking-wide ${wrong ? "text-destructive" : "text-muted-foreground"}`}
+            className={`font-mono text-2xl font-bold tracking-wide ${wrong ? "text-destructive" : typed ? "text-primary" : "text-muted-foreground"}`}
           >
-            {typed || <span className="opacity-50">ここに入力…</span>}
+            {typed || <span className="text-muted-foreground opacity-50">ここに入力…</span>}
             <span className="ml-0.5 inline-block h-6 w-[3px] animate-blink bg-primary align-middle" />
           </span>
         </div>
@@ -336,16 +362,26 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
               exit={{ opacity: 0 }}
               className="mt-4 flex flex-wrap items-center justify-center gap-1"
             >
-              {current.answerChars.map((c, i) => (
-                <span
-                  key={i}
-                  className={`flex h-10 min-w-9 items-center justify-center rounded-lg border-2 border-border px-1 text-lg font-bold ${
-                    i < hintLevel ? "bg-accent text-accent-foreground" : "bg-muted text-transparent"
-                  }`}
-                >
-                  {i < hintLevel ? c : "?"}
-                </span>
-              ))}
+              {current.answerChars.map((c, i) => {
+                const isTyped = i < completed
+                const isRevealed = isTyped || i < hintLevel
+                const style = isTyped
+                  ? "border-primary/50 bg-primary/15 text-primary" // already typed → tinted
+                  : isRevealed
+                    ? "border-border bg-accent text-accent-foreground" // hint reveal
+                    : "border-border bg-muted text-transparent" // still hidden
+                return (
+                  <motion.span
+                    key={i}
+                    initial={isTyped ? { scale: 0.6 } : false}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 18 }}
+                    className={`flex h-10 min-w-9 items-center justify-center rounded-lg border-2 px-1 text-lg font-bold ${style}`}
+                  >
+                    {isRevealed ? c : "?"}
+                  </motion.span>
+                )
+              })}
             </motion.div>
           )}
         </AnimatePresence>
@@ -434,5 +470,44 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
       {/* AI chat */}
       <AnimatePresence>{showChat && <AiChat answered={answered} onClose={() => setShowChat(false)} />}</AnimatePresence>
     </div>
+  )
+}
+
+// A quick radial confetti pop of colored dots for a cleared question.
+const BURST_COLORS = [
+  "var(--pop-pink)",
+  "var(--pop-yellow)",
+  "var(--pop-teal)",
+  "var(--pop-blue)",
+  "var(--pop-orange)",
+  "var(--primary)",
+]
+
+function Burst() {
+  const count = 12
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => {
+        const angle = (i / count) * Math.PI * 2 + Math.random() * 0.4
+        const dist = 80 + Math.random() * 70
+        const size = 8 + Math.random() * 8
+        return (
+          <motion.span
+            key={i}
+            initial={{ x: 0, y: 0, scale: 0, opacity: 1 }}
+            animate={{
+              x: Math.cos(angle) * dist,
+              y: Math.sin(angle) * dist,
+              scale: [0, 1, 0.5],
+              opacity: [1, 1, 0],
+              rotate: Math.random() * 180,
+            }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="absolute rounded-[3px]"
+            style={{ width: size, height: size, backgroundColor: BURST_COLORS[i % BURST_COLORS.length] }}
+          />
+        )
+      })}
+    </>
   )
 }
