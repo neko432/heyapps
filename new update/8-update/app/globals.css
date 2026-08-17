@@ -1,0 +1,339 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-pop-pink: var(--pop-pink);
+  --color-pop-yellow: var(--pop-yellow);
+  --color-pop-teal: var(--pop-teal);
+  --color-pop-blue: var(--pop-blue);
+  --color-pop-orange: var(--pop-orange);
+
+  --font-sans: var(--font-rounded), 'Hiragino Maru Gothic ProN', sans-serif;
+  --font-pop: var(--font-pop), var(--font-rounded), sans-serif;
+  --font-rampart: var(--font-rampart), var(--font-rounded), sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 10px);
+  --radius-3xl: calc(var(--radius) + 18px);
+}
+
+:root {
+  color-scheme: light;
+  --radius: 1.1rem;
+
+  /* Soft periwinkle that sits between purple and emerald on the wheel, so both
+     the purple element icon and the emerald ion icon harmonise with it. */
+  --background: oklch(0.972 0.021 268);
+  --foreground: oklch(0.28 0.05 285);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.28 0.05 285);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.28 0.05 285);
+
+  --primary: oklch(0.63 0.21 300);
+  --primary-foreground: oklch(0.99 0.01 300);
+
+  --secondary: oklch(0.94 0.04 300);
+  --secondary-foreground: oklch(0.4 0.12 300);
+
+  --muted: oklch(0.95 0.02 285);
+  --muted-foreground: oklch(0.55 0.04 285);
+
+  --accent: oklch(0.93 0.06 340);
+  --accent-foreground: oklch(0.4 0.15 350);
+
+  --destructive: oklch(0.62 0.24 20);
+  --destructive-foreground: oklch(0.99 0.01 20);
+
+  --border: oklch(0.9 0.03 290);
+  --input: oklch(0.9 0.03 290);
+  --ring: oklch(0.63 0.21 300);
+
+  --pop-pink: oklch(0.72 0.19 355);
+  --pop-yellow: oklch(0.86 0.16 90);
+  /* Emerald green — the ion mode's signature accent. */
+  --pop-teal: oklch(0.7 0.15 162);
+  --pop-blue: oklch(0.68 0.16 250);
+  --pop-orange: oklch(0.75 0.17 55);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    /* Simple single-color pastel background — no gradient, no pattern. */
+  }
+}
+
+@keyframes pop-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-pop-float {
+  animation: pop-float 4s ease-in-out infinite;
+}
+
+@keyframes pop-wiggle {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+.animate-pop-wiggle {
+  animation: pop-wiggle 2.5s ease-in-out infinite;
+}
+
+/* Chunky pop shadow used for buttons/cards. */
+.shadow-pop {
+  box-shadow: 0 6px 0 0 color-mix(in oklch, var(--foreground) 18%, transparent);
+}
+.shadow-pop-sm {
+  box-shadow: 0 4px 0 0 color-mix(in oklch, var(--foreground) 16%, transparent);
+}
+.shadow-popLg {
+  box-shadow: 0 10px 0 0 color-mix(in oklch, var(--foreground) 20%, transparent);
+}
+
+/* Wrong-answer shake for the prompt card. */
+@keyframes pop-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+.animate-shake {
+  animation: pop-shake 0.3s ease-in-out;
+}
+
+/* Typing caret blink. */
+@keyframes pop-blink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+.animate-blink {
+  animation: pop-blink 1s step-end infinite;
+}
+
+/* Rainbow sweep used on the rare special-celebration headline. */
+@keyframes rainbow-pan {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+.text-rainbow {
+  background-image: linear-gradient(
+    100deg,
+    var(--pop-pink),
+    var(--pop-orange),
+    var(--pop-yellow),
+    var(--pop-teal),
+    var(--pop-blue),
+    var(--primary),
+    var(--pop-pink)
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: rainbow-pan 1.6s linear infinite;
+}
+@keyframes title-secret-color {
+  0%, 100% { color: var(--primary); }
+  25% { color: var(--pop-pink); }
+  50% { color: var(--pop-orange); }
+  75% { color: var(--pop-teal); }
+}
+.title-secret-letter {
+  color: var(--primary);
+  text-shadow: 0 2px 0 var(--card);
+  animation: title-secret-color 1.4s ease-in-out infinite;
+}
+
+/* Small idle bob for playful icons/badges. */
+@keyframes pop-bob {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-6px) rotate(3deg); }
+}
+.animate-pop-bob {
+  animation: pop-bob 1.8s ease-in-out infinite;
+}
+
+/* Element tiles collide, flash, and scatter between screens. */
+.reaction-transition {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.reaction-backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--primary);
+}
+.reaction-cover .reaction-backdrop { animation: reaction-backdrop-in .5s cubic-bezier(.76, 0, .24, 1) both; }
+.reaction-reveal .reaction-backdrop { animation: reaction-backdrop-out .58s cubic-bezier(.76, 0, .24, 1) both; }
+@keyframes reaction-backdrop-in { from { clip-path: circle(0 at 50% 50%); } to { clip-path: circle(75vmax at 50% 50%); } }
+@keyframes reaction-backdrop-out { from { clip-path: circle(75vmax at 50% 50%); } to { clip-path: circle(0 at 50% 50%); } }
+.reaction-label {
+  position: absolute;
+  z-index: 3;
+  font-family: var(--font-pop), sans-serif;
+  font-size: clamp(.72rem, 2vw, 1rem);
+  font-weight: 900;
+  letter-spacing: .24em;
+  color: var(--primary-foreground);
+}
+.reaction-cover .reaction-label { animation: reaction-label-in .38s .2s both; }
+.reaction-reveal .reaction-label { animation: reaction-label-out .25s both; }
+@keyframes reaction-label-in { from { opacity: 0; transform: scale(.6) rotate(-8deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes reaction-label-out { to { opacity: 0; transform: scale(1.7); } }
+.reaction-ring {
+  position: absolute;
+  z-index: 2;
+  width: min(35vw, 18rem);
+  aspect-ratio: 1;
+  border: 4px solid var(--pop-yellow);
+  border-radius: 50%;
+}
+.reaction-ring span { position: absolute; inset: 12%; border: 2px dashed var(--primary-foreground); border-radius: inherit; }
+.reaction-ring span:last-child { inset: 29%; border-style: solid; border-color: var(--pop-pink); }
+.reaction-cover .reaction-ring { animation: reaction-ring-in .5s .08s both; }
+.reaction-reveal .reaction-ring { animation: reaction-ring-out .45s both; }
+@keyframes reaction-ring-in { from { opacity: 0; transform: scale(.05) rotate(-130deg); } 70% { opacity: 1; transform: scale(1.15) rotate(12deg); } to { transform: scale(1) rotate(0); } }
+@keyframes reaction-ring-out { to { opacity: 0; transform: scale(3) rotate(120deg); } }
+.reaction-tile {
+  position: absolute;
+  z-index: 4;
+  display: grid;
+  width: clamp(3.8rem, 8vw, 5.5rem);
+  aspect-ratio: 1;
+  place-items: center;
+  border: 3px solid var(--foreground);
+  border-radius: 1rem;
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: 0 6px 0 color-mix(in oklch, var(--foreground) 25%, transparent);
+}
+.reaction-tile strong { font-family: var(--font-pop), sans-serif; font-size: clamp(1.35rem, 4vw, 2rem); line-height: 1; }
+.reaction-tile small { font-size: .58rem; font-weight: 900; }
+.reaction-tile-h { --tile-x: -29vw; --tile-y: -28vh; --tile-r: -18deg; }
+.reaction-tile-o { --tile-x: 31vw; --tile-y: -25vh; --tile-r: 16deg; }
+.reaction-tile-na { --tile-x: -36vw; --tile-y: 18vh; --tile-r: 13deg; }
+.reaction-tile-cl { --tile-x: 34vw; --tile-y: 23vh; --tile-r: -15deg; }
+.reaction-tile-c { --tile-x: -8vw; --tile-y: -38vh; --tile-r: 10deg; }
+.reaction-tile-fe { --tile-x: 10vw; --tile-y: 38vh; --tile-r: -9deg; }
+.reaction-cover .reaction-tile { animation: reaction-tile-in .46s cubic-bezier(.34, 1.56, .64, 1) both; }
+.reaction-reveal .reaction-tile { animation: reaction-tile-out .5s cubic-bezier(.36, 0, .66, -.56) both; }
+@keyframes reaction-tile-in { from { opacity: 0; transform: translate(var(--tile-x), var(--tile-y)) rotate(var(--tile-r)) scale(.4); } to { opacity: 1; transform: translate(calc(var(--tile-x) * .18), calc(var(--tile-y) * .18)) rotate(0) scale(1); } }
+@keyframes reaction-tile-out { from { transform: translate(calc(var(--tile-x) * .18), calc(var(--tile-y) * .18)) rotate(0) scale(1); } to { opacity: 0; transform: translate(calc(var(--tile-x) * 1.35), calc(var(--tile-y) * 1.35)) rotate(calc(var(--tile-r) * 3)) scale(.3); } }
+.reaction-spark { position: absolute; z-index: 5; width: 1rem; height: 5rem; border-radius: 999px; background: var(--pop-yellow); }
+.reaction-spark-one { transform: rotate(35deg) translateY(-8rem); }
+.reaction-spark-two { transform: rotate(155deg) translateY(-10rem); background: var(--pop-pink); }
+.reaction-spark-three { transform: rotate(270deg) translateY(-9rem); background: var(--pop-teal); }
+.reaction-cover .reaction-spark { animation: reaction-spark .35s .28s both; }
+.reaction-reveal .reaction-spark { opacity: 0; }
+@keyframes reaction-spark { from { opacity: 0; scale: 0; } 45% { opacity: 1; scale: 1; } to { opacity: 0; scale: 1.8; } }
+@media (prefers-reduced-motion: reduce) {
+  .reaction-transition * { animation-duration: 1ms !important; animation-delay: 0ms !important; }
+}
+
+/* Discoverable home-screen secrets. */
+.secret-element {
+  opacity: .1;
+  animation: pop-float 4s ease-in-out infinite;
+  transition: opacity 80ms ease-out;
+}
+.secret-element:focus-visible {
+  opacity: .3;
+  outline: 2px dashed var(--primary);
+  outline-offset: 4px;
+  border-radius: .5rem;
+}
+.secret-message { isolation: isolate; }
+.secret-confetti {
+  pointer-events: none;
+  position: absolute;
+  inset: 50%;
+  z-index: -1;
+}
+.secret-confetti i {
+  --angle: calc(var(--i) * 30deg);
+  position: absolute;
+  width: .45rem;
+  height: .8rem;
+  border-radius: .2rem;
+  background: var(--pop-yellow);
+  animation: secret-confetti-burst .75s cubic-bezier(.2,.8,.3,1) both;
+  animation-delay: calc(var(--i) * 12ms);
+}
+.secret-confetti i:nth-child(3n + 1) { background: var(--pop-pink); }
+.secret-confetti i:nth-child(3n + 2) { background: var(--pop-teal); }
+@keyframes secret-confetti-burst {
+  from { opacity: 1; transform: rotate(var(--angle)) translateY(0) scale(.4); }
+  to { opacity: 0; transform: rotate(var(--angle)) translateY(-5rem) rotate(180deg) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .secret-element { animation: none; }
+  .secret-confetti i { animation-duration: 1ms !important; animation-delay: 0ms !important; }
+}
+
+/* Mascot: slow orbiting electron ring. */
+@keyframes mascot-orbit {
+  to { transform: rotate(360deg); }
+}
+.animate-mascot-orbit {
+  animation: mascot-orbit 7s linear infinite;
+}
+
+/* Mascot: subtle idle bob so it feels alive without being distracting. */
+@keyframes mascot-idle {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  30% { transform: translateY(-3px) rotate(-2deg); }
+  60% { transform: translateY(0) rotate(2deg); }
+}
+.animate-mascot-idle {
+  animation: mascot-idle 3.2s ease-in-out infinite;
+}
+
+/* Mascot: periodic eye blink, like yui540's toy-ish characters. */
+@keyframes mascot-blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  94% { transform: scaleY(0.08); }
+}
+.mascot-eye {
+  width: 7px;
+  height: 12px;
+  border-radius: 999px;
+  background: oklch(0.28 0.05 285);
+  animation: mascot-blink 3.6s ease-in-out infinite;
+}

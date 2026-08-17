@@ -1,0 +1,88 @@
+"use client"
+
+import { useState } from "react"
+import { CurtainTransition } from "@/components/curtain-transition"
+import { HomeScreen } from "@/components/home-screen"
+import { SelectScreen } from "@/components/select-screen"
+import { GameScreen } from "@/components/game-screen"
+import { ResultScreen } from "@/components/result-screen"
+import { addMistakes, addStat, getRange, getStats } from "@/lib/storage"
+import type { GameConfig, GameResult, PlayRange, ResultAchievement } from "@/lib/types"
+import type { Category, Direction } from "@/lib/quiz-data"
+
+type Screen = "home" | "select" | "game" | "result"
+
+export default function Page() {
+  const [screen, setScreen] = useState<Screen>("home")
+  const [category, setCategory] = useState<Category | null>(null)
+  const [config, setConfig] = useState<GameConfig | null>(null)
+  const [result, setResult] = useState<GameResult | null>(null)
+  const [achievement, setAchievement] = useState<ResultAchievement | null>(null)
+
+  function selectCategory(c: Category) {
+    setCategory(c)
+    setScreen("select")
+  }
+
+  function start(direction: Direction, range: PlayRange) {
+    if (!category) return
+    setConfig({ category, direction, range })
+    setScreen("game")
+  }
+
+  function finish(r: GameResult) {
+    const previous = getStats()
+      .filter((s) => s.category === r.category && s.direction === r.direction && getRange(s) === r.range)
+      .map((s) => s.totalMs)
+      .sort((a, b) => a - b)
+    const previousBest = previous[0]
+    setAchievement({
+      isFirstClear: previous.length === 0,
+      isNewBest: previous.length > 0 && r.totalMs < previousBest,
+      previousBest,
+      rank: previous.filter((time) => time < r.totalMs).length + 1,
+    })
+    addStat({
+      id: crypto.randomUUID(),
+      category: r.category,
+      direction: r.direction,
+      totalMs: r.totalMs,
+      count: r.results.length,
+      date: Date.now(),
+      slowestPrompt: r.slowestPrompt,
+      slowestMs: r.slowestMs,
+      range: r.range,
+    })
+    addMistakes(r.category, r.direction, r.results)
+    setResult(r)
+    setScreen("result")
+  }
+
+  return (
+    <main className="min-h-dvh">
+      <CurtainTransition transitionKey={screen + (category ?? "")}>
+        {screen === "home" && <HomeScreen onSelectCategory={selectCategory} />}
+
+        {screen === "select" && category && (
+          <SelectScreen category={category} onBack={() => setScreen("home")} onStart={start} />
+        )}
+
+        {screen === "game" && config && (
+          <GameScreen config={config} onFinish={finish} onQuit={() => setScreen("home")} />
+        )}
+
+        {screen === "result" && result && achievement && (
+          <ResultScreen
+            result={result}
+            achievement={achievement}
+            onRetry={() => {
+              setConfig({ category: result.category, direction: result.direction, range: result.range })
+              setScreen("game")
+            }}
+            onHome={() => setScreen("home")}
+          />
+        )}
+      </CurtainTransition>
+    </main>
+  )
+}
