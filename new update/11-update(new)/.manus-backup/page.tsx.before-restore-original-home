@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { CurtainTransition } from "@/components/curtain-transition"
 import { HomeScreen } from "@/components/home-screen"
+import { MobileHomeQuick } from "@/components/mobile-home-quick"
 import { SelectScreen } from "@/components/select-screen"
 import { GameScreen } from "@/components/game-screen"
 import { ResultScreen } from "@/components/result-screen"
@@ -48,10 +49,7 @@ export default function Page() {
       rank: previous.filter((time) => time < r.totalMs).length + 1,
     })
     addStat({
-      id:
-        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-          ? crypto.randomUUID()
-          : `play-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      id: crypto.randomUUID(),
       category: r.category,
       direction: r.direction,
       totalMs: r.totalMs,
@@ -69,7 +67,10 @@ export default function Page() {
   return (
     <main className="min-h-dvh">
       <CurtainTransition transitionKey={screen + (category ?? "")}>
-        {screen === "home" && <HomeScreen onSelectCategory={selectCategory} />}
+        {screen === "home" && (<>
+          <MobileHomeQuick onSelectCategory={selectCategory} />
+          <div className="max-md:hidden"><HomeScreen onSelectCategory={selectCategory} /></div>
+        </>)}
 
         {screen === "select" && category && (
           <SelectScreen category={category} onBack={() => setScreen("home")} onStart={start} />

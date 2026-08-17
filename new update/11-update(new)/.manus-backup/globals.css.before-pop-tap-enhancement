@@ -352,12 +352,3 @@
   .reaction-cover .reaction-tile { animation-duration: .28s; }
   .reaction-reveal .reaction-tile { animation-duration: .34s; }
 }
-@media (hover: hover) { .pop-tap { transition: transform 160ms cubic-bezier(.23,1,.32,1), filter 160ms cubic-bezier(.23,1,.32,1); } .pop-tap:hover { transform: translateY(-2px) rotate(-.35deg); filter: brightness(1.03); } } .pop-tap:active { transform: translateY(2px) scale(.975); } @media (prefers-reduced-motion: reduce) { .pop-tap { transition: none !important; } .pop-tap:hover, .pop-tap:active { transform: none; } }
-
-/* Countdown: a single rounded display face for 3·2·1 and START. */
-.font-countdown {
-  font-family: var(--font-countdown), var(--font-rounded), sans-serif;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.035em;
-}

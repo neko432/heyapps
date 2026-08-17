@@ -48,10 +48,7 @@ export default function Page() {
       rank: previous.filter((time) => time < r.totalMs).length + 1,
     })
     addStat({
-      id:
-        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-          ? crypto.randomUUID()
-          : `play-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      id: crypto.randomUUID(),
       category: r.category,
       direction: r.direction,
       totalMs: r.totalMs,

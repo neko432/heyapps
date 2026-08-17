@@ -105,7 +105,7 @@ export function Mascot() {
         <span aria-hidden className={`animate-mascot-orbit absolute -inset-1.5 rounded-full border-2 border-dashed ${excited ? "border-pop-yellow" : "border-pop-teal/60"}`}>
           <span className="absolute -top-1 left-1/2 size-2.5 -translate-x-1/2 rounded-full bg-pop-pink" />
         </span>
-        <span className={`pointer-events-auto animate-mascot-idle relative grid size-13 place-items-center rounded-full shadow-pop-sm ${excited ? "bg-pop-yellow" : "bg-pop-teal"}`}>
+        <span className={`animate-mascot-idle relative grid size-13 place-items-center rounded-full shadow-pop-sm ${excited ? "bg-pop-yellow" : "bg-pop-teal"}`}>
           <span className="flex items-center gap-2"><span className="mascot-eye" /><span className="mascot-eye" /></span>
           <span className="absolute bottom-3 left-1/2 h-1.5 w-2.5 -translate-x-1/2 rounded-b-full bg-foreground/70" />
           <span className="absolute bottom-4 left-1.5 size-1.5 rounded-full bg-pop-pink/70" />

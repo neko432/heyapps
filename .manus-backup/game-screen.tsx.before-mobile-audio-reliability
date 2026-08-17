@@ -71,9 +71,6 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
   const [typed, setTyped] = useState("")
   // The value the player sees in the input field. It preserves kana/romaji exactly as typed.
   const [inputText, setInputText] = useState("")
-  // Persist the last fully valid prefix so IME conversion can roll back safely.
-  const lastValidInputRef = useRef("")
-  const suppressNextTypingSoundRef = useRef(false)
   const [hintLevel, setHintLevel] = useState(0)
   const [usedHint, setUsedHint] = useState(false)
   const [paused, setPaused] = useState(false)
@@ -442,58 +439,24 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
   }
 
   function handleCompositionEnd(e: React.CompositionEvent<HTMLInputElement>) {
-    // The input event emitted immediately after IME confirmation is usually
-    // caused by Enter. It must update the answer but not sound like a key press.
-    suppressNextTypingSoundRef.current = true
-    window.setTimeout(() => {
-      suppressNextTypingSoundRef.current = false
-    }, 120)
     isComposingRef.current = false
     handleMobileInput(e as unknown as React.ChangeEvent<HTMLInputElement>)
   }
 
-  function playTypingSound(e: React.FormEvent<HTMLInputElement>) {
-    const native = e.nativeEvent as InputEvent
-    // Enter confirms an IME conversion; it is not a typed character.
-    if (
-      suppressNextTypingSoundRef.current ||
-      native.inputType === "insertLineBreak" ||
-      native.inputType === "insertParagraph" ||
-      native.data === null
-    ) {
-      suppressNextTypingSoundRef.current = false
-      return
-    }
-    // input fires inside the actual mobile keyboard gesture, which is the
-    // reliable time to unlock iOS/Android audio playback.
+  function playTypingSound() {
+    // beforeinput is fired in the same user gesture as a mobile keyboard tap.
+    // This is the most reliable point to resume iOS/Android Web Audio playback.
     sound.resume()
     sound.key()
   }
 
-  function handleInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") {
-      suppressNextTypingSoundRef.current = true
-      window.setTimeout(() => {
-        suppressNextTypingSoundRef.current = false
-      }, 80)
-    }
-  }
-
-  function restoreLastValidInput(e: React.ChangeEvent<HTMLInputElement>) {
-    const restored = lastValidInputRef.current
-    e.target.value = restored
-    setInputText(restored)
-    triggerWrong()
-  }
-
   function handleMobileInput(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = e.target.value
+    const previous = inputText
 
     if (overlayOpen || countdown !== null || !current || advancingRef.current) {
       return
     }
-    // Show composing text in real time, but only commit it after IME conversion
-    // is finished. The previous valid prefix remains stored for a rollback.
     if (isComposingRef.current) {
       setInputText(raw)
       return
@@ -509,17 +472,18 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
       const romajiIsValid = romaji !== "" && romajiState !== "no"
 
       if (!kanaIsPrefix && !romajiIsValid) {
-        restoreLastValidInput(e)
+        // Do not erase already-correct letters. Restore the last valid prefix instead.
+        e.target.value = previous
+        setInputText(previous)
+        triggerWrong()
         return
       }
 
       const canonical = kanaIsPrefix ? kana : romaji
-      lastValidInputRef.current = raw
       setInputText(raw)
       commit(canonical)
 
       if ((kanaIsPrefix && kana === target) || romajiState === "match") {
-        lastValidInputRef.current = ""
         setInputText("")
         celebrate()
         advance(current, usedHint)
@@ -531,15 +495,15 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
     const value = normalizeAscii(raw)
     const target = normalizeAscii(current.ascii ?? "")
     if (!isAsciiOnly(value) || !target.startsWith(value)) {
-      restoreLastValidInput(e)
+      e.target.value = previous
+      setInputText(previous)
+      triggerWrong()
       return
     }
 
-    lastValidInputRef.current = raw
     setInputText(raw)
     commit(value)
     if (value === target) {
-      lastValidInputRef.current = ""
       setInputText("")
       celebrate()
       advance(current, usedHint)
@@ -710,8 +674,7 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
         value={inputText}
         placeholder="ここに入力..."
         onPointerDown={() => sound.resume()}
-        onInputCapture={playTypingSound}
-        onKeyDownCapture={handleInputKeyDown}
+        onBeforeInput={playTypingSound}
         onCompositionStart={handleCompositionStart}
         onCompositionEnd={handleCompositionEnd}
         onChange={handleMobileInput}
@@ -719,7 +682,7 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
           if (!overlayOpen && isTouch.current) setTimeout(() => inputRef.current?.focus(), 0)
         }}
         tabIndex={-1}
-        className="relative z-20 mx-auto mt-5 block w-full max-w-md md:hidden rounded-2xl border-2 border-primary bg-card px-4 py-3 text-center text-lg font-black text-foreground shadow-pop-sm outline-none placeholder:text-muted-foreground focus:ring-4 focus:ring-primary/25"
+        className="relative z-20 mx-auto mt-5 block w-full max-w-md rounded-2xl border-2 border-primary bg-card px-4 py-3 text-center text-lg font-black text-foreground shadow-pop-sm outline-none placeholder:text-muted-foreground focus:ring-4 focus:ring-primary/25"
         inputMode="text"
         enterKeyHint="send"
         autoComplete="off"
@@ -810,7 +773,7 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
                 animate={{ scale: 1, opacity: 1, rotate: countdown === 0 ? 0 : countdown % 2 === 0 ? -4 : 4 }}
                 exit={{ scale: 0.5, opacity: 0, transition: { duration: 0.12 } }}
                 transition={{ type: "spring", stiffness: 500, damping: 22 }}
-                className="font-countdown select-none text-8xl sm:text-9xl"
+                className="font-pop select-none text-8xl sm:text-9xl"
                 style={{
                   color:
                     countdown === 0
