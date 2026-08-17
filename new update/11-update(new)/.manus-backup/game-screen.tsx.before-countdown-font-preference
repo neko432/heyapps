@@ -810,7 +810,7 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
                 animate={{ scale: 1, opacity: 1, rotate: countdown === 0 ? 0 : countdown % 2 === 0 ? -4 : 4 }}
                 exit={{ scale: 0.5, opacity: 0, transition: { duration: 0.12 } }}
                 transition={{ type: "spring", stiffness: 500, damping: 22 }}
-                className="font-countdown select-none text-8xl sm:text-9xl"
+                className="font-rounded tracking-tight select-none text-8xl sm:text-9xl"
                 style={{
                   color:
                     countdown === 0

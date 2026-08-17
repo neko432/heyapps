@@ -28,7 +28,7 @@ function getCtx(): AudioContext | null {
     if (!AC) return null
     ctx = new AC()
     master = ctx.createGain()
-    master.gain.value = 1
+    master.gain.value = 0.85
     master.connect(ctx.destination)
   }
   if (ctx.state === "suspended") ctx.resume().catch(() => {})
@@ -154,18 +154,10 @@ export const sound = {
   key() {
     if (!enabled) return
     const c = getCtx(); if (!c || !master) return
-    // Some mobile browsers resolve resume asynchronously. Retry the key sound
-    // after the context is running instead of silently dropping the first tap.
-    if (c.state !== "running") {
-      c.resume().then(() => {
-        if (c.state === "running") sound.key()
-      }).catch(() => {})
-      return
-    }
     const buf = pickVariant(buffers.key, questionKeyVariant)
     if (buf) return playBuffer(c, buf)
     const t = c.currentTime
-    noiseClack(c, master, { startAt: t, dur: 0.04, peak: 0.55, freq: 2600 + Math.random() * 1600, q: 0.7 })
+    noiseClack(c, master, { startAt: t, dur: 0.028, peak: 0.55, freq: 2600 + Math.random() * 1600, q: 0.7 })
     noiseClack(c, master, { startAt: t, dur: 0.045, peak: 0.35, freq: 700 + Math.random() * 200, q: 1.4 })
     note(c, master, { freq: 180 + Math.random() * 40, startAt: t, dur: 0.04, type: "square", peak: 0.16, slideTo: 90 })
   },

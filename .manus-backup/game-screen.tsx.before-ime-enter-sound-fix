@@ -442,12 +442,6 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
   }
 
   function handleCompositionEnd(e: React.CompositionEvent<HTMLInputElement>) {
-    // The input event emitted immediately after IME confirmation is usually
-    // caused by Enter. It must update the answer but not sound like a key press.
-    suppressNextTypingSoundRef.current = true
-    window.setTimeout(() => {
-      suppressNextTypingSoundRef.current = false
-    }, 120)
     isComposingRef.current = false
     handleMobileInput(e as unknown as React.ChangeEvent<HTMLInputElement>)
   }
@@ -810,7 +804,7 @@ export function GameScreen({ config, onFinish, onQuit }: Props) {
                 animate={{ scale: 1, opacity: 1, rotate: countdown === 0 ? 0 : countdown % 2 === 0 ? -4 : 4 }}
                 exit={{ scale: 0.5, opacity: 0, transition: { duration: 0.12 } }}
                 transition={{ type: "spring", stiffness: 500, damping: 22 }}
-                className="font-countdown select-none text-8xl sm:text-9xl"
+                className="font-pop select-none text-8xl sm:text-9xl"
                 style={{
                   color:
                     countdown === 0
